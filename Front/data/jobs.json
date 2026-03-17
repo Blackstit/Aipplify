@@ -1,0 +1,437 @@
+[
+  {
+    "id": "1",
+    "slug": "senior-frontend-developer-typescript",
+    "title": "Senior Frontend Developer",
+    "company": {
+      "id": "1",
+      "name": "TechCorp",
+      "slug": "techcorp",
+      "logo": "https://via.placeholder.com/64",
+      "verified": true
+    },
+    "salary": "$120k - $180k",
+    "location": "Remote",
+    "workType": "remote",
+    "region": "global",
+    "specialization": "Frontend",
+    "experience": "senior",
+    "tags": ["typescript", "react", "next.js", "frontend"],
+    "description": "We are looking for an experienced Frontend Developer to join our team. You will be responsible for building modern web applications using TypeScript and React.",
+    "requirements": [
+      "5+ years of experience in frontend development",
+      "Strong knowledge of TypeScript and React",
+      "Experience with Next.js",
+      "Understanding of modern CSS frameworks"
+    ],
+    "postedAt": "2024-01-15T10:00:00Z",
+    "featured": true,
+    "verified": false
+  },
+  {
+    "id": "2",
+    "slug": "ai-engineer-machine-learning",
+    "title": "AI Engineer - Machine Learning",
+    "company": {
+      "id": "2",
+      "name": "AI Innovations",
+      "slug": "ai-innovations",
+      "logo": "https://via.placeholder.com/64",
+      "verified": true
+    },
+    "salary": "$150k - $220k",
+    "location": "San Francisco, CA",
+    "workType": "hybrid",
+    "region": "usa",
+    "specialization": "AI/ML",
+    "experience": "senior",
+    "tags": ["ai", "machine-learning", "python", "tensorflow"],
+    "description": "Join our AI team to develop cutting-edge machine learning models and AI solutions.",
+    "requirements": [
+      "PhD or Master's in Computer Science or related field",
+      "Experience with TensorFlow or PyTorch",
+      "Strong Python skills",
+      "Published research papers preferred"
+    ],
+    "postedAt": "2024-01-14T14:30:00Z",
+    "featured": false,
+    "verified": true
+  },
+  {
+    "id": "3",
+    "slug": "web3-blockchain-developer",
+    "title": "Web3 Blockchain Developer",
+    "company": {
+      "id": "3",
+      "name": "CryptoLabs",
+      "slug": "cryptolabs",
+      "logo": "https://via.placeholder.com/64",
+      "verified": false
+    },
+    "salary": "$100k - $160k",
+    "location": "Remote",
+    "workType": "remote",
+    "region": "global",
+    "specialization": "Blockchain",
+    "experience": "mid",
+    "tags": ["web3", "blockchain", "solidity", "ethereum"],
+    "description": "We're building the future of decentralized applications. Looking for a skilled Web3 developer.",
+    "requirements": [
+      "3+ years of blockchain development experience",
+      "Proficiency in Solidity",
+      "Experience with Ethereum ecosystem",
+      "Knowledge of DeFi protocols"
+    ],
+    "postedAt": "2024-01-13T09:15:00Z",
+    "featured": false,
+    "verified": false
+  },
+  {
+    "id": "4",
+    "slug": "junior-react-developer",
+    "title": "Junior React Developer",
+    "company": {
+      "id": "4",
+      "name": "StartupHub",
+      "slug": "startuphub",
+      "logo": "https://via.placeholder.com/64",
+      "verified": false
+    },
+    "salary": "$60k - $90k",
+    "location": "New York, NY",
+    "workType": "office",
+    "region": "usa",
+    "specialization": "Frontend",
+    "experience": "junior",
+    "tags": ["react", "javascript", "frontend", "css"],
+    "description": "Perfect opportunity for a junior developer to grow their skills in a fast-paced startup environment.",
+    "requirements": [
+      "1+ years of React experience",
+      "Strong JavaScript fundamentals",
+      "Willingness to learn",
+      "Good communication skills"
+    ],
+    "postedAt": "2024-01-12T16:45:00Z",
+    "featured": false,
+    "verified": false
+  },
+  {
+    "id": "5",
+    "slug": "fullstack-developer-nodejs",
+    "title": "Fullstack Developer (Node.js)",
+    "company": {
+      "id": "5",
+      "name": "DevStudio",
+      "slug": "devstudio",
+      "logo": "https://via.placeholder.com/64",
+      "verified": true
+    },
+    "salary": "$90k - $130k",
+    "location": "Berlin, Germany",
+    "workType": "hybrid",
+    "region": "europe",
+    "specialization": "Fullstack",
+    "experience": "mid",
+    "tags": ["node.js", "typescript", "react", "postgresql"],
+    "description": "Join our team to build scalable web applications from frontend to backend.",
+    "requirements": [
+      "3+ years of fullstack development",
+      "Experience with Node.js and TypeScript",
+      "Knowledge of PostgreSQL",
+      "Experience with React"
+    ],
+    "postedAt": "2024-01-11T11:20:00Z",
+    "featured": false,
+    "verified": true
+  },
+  {
+    "id": "6",
+    "slug": "ai-research-scientist",
+    "title": "AI Research Scientist",
+    "company": {
+      "id": "2",
+      "name": "AI Innovations",
+      "slug": "ai-innovations",
+      "logo": "https://via.placeholder.com/64",
+      "verified": true
+    },
+    "salary": "$180k - $250k",
+    "location": "London, UK",
+    "workType": "hybrid",
+    "region": "europe",
+    "specialization": "AI/ML",
+    "experience": "senior",
+    "tags": ["ai", "research", "python", "deep-learning"],
+    "description": "Lead research initiatives in artificial intelligence and machine learning.",
+    "requirements": [
+      "PhD in AI/ML or related field",
+      "5+ years of research experience",
+      "Strong publication record",
+      "Experience with deep learning frameworks"
+    ],
+    "postedAt": "2024-01-10T08:00:00Z",
+    "featured": false,
+    "verified": false
+  },
+  {
+    "id": "7",
+    "slug": "lead-software-engineer",
+    "title": "Lead Software Engineer",
+    "company": {
+      "id": "6",
+      "name": "MetaTech",
+      "slug": "metatech",
+      "logo": "https://via.placeholder.com/64",
+      "verified": true
+    },
+    "salary": "$200k - $280k",
+    "location": "Remote",
+    "workType": "remote",
+    "region": "global",
+    "specialization": "Backend",
+    "experience": "lead",
+    "tags": ["go", "kubernetes", "microservices", "aws"],
+    "description": "Lead a team of engineers building scalable backend systems.",
+    "requirements": [
+      "8+ years of software engineering experience",
+      "Experience leading engineering teams",
+      "Strong knowledge of Go and distributed systems",
+      "AWS certification preferred"
+    ],
+    "postedAt": "2024-01-09T12:00:00Z",
+    "featured": true,
+    "verified": true
+  },
+  {
+    "id": "8",
+    "slug": "devops-engineer-sre",
+    "title": "DevOps Engineer (SRE)",
+    "company": {
+      "id": "7",
+      "name": "CloudScale",
+      "slug": "cloudscale",
+      "logo": "https://via.placeholder.com/64",
+      "verified": true
+    },
+    "salary": "$130k - $180k",
+    "location": "San Francisco, CA",
+    "workType": "hybrid",
+    "region": "usa",
+    "specialization": "DevOps",
+    "experience": "senior",
+    "tags": ["kubernetes", "docker", "terraform", "ci/cd"],
+    "description": "Join our SRE team to ensure high availability and performance of our infrastructure.",
+    "requirements": [
+      "5+ years of DevOps/SRE experience",
+      "Expertise in Kubernetes and containerization",
+      "Experience with infrastructure as code",
+      "Strong troubleshooting skills"
+    ],
+    "postedAt": "2024-01-08T15:30:00Z",
+    "featured": false,
+    "verified": true
+  },
+  {
+    "id": "9",
+    "slug": "mobile-developer-ios",
+    "title": "Senior iOS Developer",
+    "company": {
+      "id": "8",
+      "name": "MobileFirst",
+      "slug": "mobilefirst",
+      "logo": null,
+      "verified": false
+    },
+    "salary": "$110k - $160k",
+    "location": "Remote",
+    "workType": "remote",
+    "region": "global",
+    "specialization": "Mobile",
+    "experience": "senior",
+    "tags": ["swift", "ios", "swiftui", "mvvm"],
+    "description": "Build beautiful and performant iOS applications using modern Swift and SwiftUI.",
+    "requirements": [
+      "5+ years of iOS development",
+      "Strong Swift and SwiftUI skills",
+      "Experience with MVVM architecture",
+      "Published apps in App Store"
+    ],
+    "postedAt": "2024-01-07T10:15:00Z",
+    "featured": false,
+    "verified": false
+  },
+  {
+    "id": "10",
+    "slug": "data-scientist-ml",
+    "title": "Data Scientist - ML",
+    "company": {
+      "id": "9",
+      "name": "DataDriven",
+      "slug": "datadriven",
+      "logo": "https://via.placeholder.com/64",
+      "verified": true
+    },
+    "salary": "$140k - $200k",
+    "location": "New York, NY",
+    "workType": "hybrid",
+    "region": "usa",
+    "specialization": "Data Science",
+    "experience": "senior",
+    "tags": ["python", "pandas", "scikit-learn", "sql"],
+    "description": "Apply machine learning to solve complex business problems.",
+    "requirements": [
+      "4+ years of data science experience",
+      "Strong Python and SQL skills",
+      "Experience with ML frameworks",
+      "PhD or Master's preferred"
+    ],
+    "postedAt": "2024-01-06T14:20:00Z",
+    "featured": false,
+    "verified": true
+  },
+  {
+    "id": "11",
+    "slug": "security-engineer",
+    "title": "Security Engineer",
+    "company": {
+      "id": "10",
+      "name": "SecureNet",
+      "slug": "securenet",
+      "logo": "https://via.placeholder.com/64",
+      "verified": true
+    },
+    "salary": "$150k - $220k",
+    "location": "Remote",
+    "workType": "remote",
+    "region": "global",
+    "specialization": "Security",
+    "experience": "senior",
+    "tags": ["security", "penetration-testing", "aws", "kubernetes"],
+    "description": "Protect our infrastructure and applications from security threats.",
+    "requirements": [
+      "5+ years of security engineering",
+      "Experience with penetration testing",
+      "Knowledge of cloud security",
+      "Relevant certifications preferred"
+    ],
+    "postedAt": "2024-01-05T09:00:00Z",
+    "featured": false,
+    "verified": true
+  },
+  {
+    "id": "12",
+    "slug": "product-manager-tech",
+    "title": "Product Manager (Tech)",
+    "company": {
+      "id": "11",
+      "name": "ProductLab",
+      "slug": "productlab",
+      "logo": "https://via.placeholder.com/64",
+      "verified": false
+    },
+    "salary": "$120k - $170k",
+    "location": "Seattle, WA",
+    "workType": "hybrid",
+    "region": "usa",
+    "specialization": "Product",
+    "experience": "mid",
+    "tags": ["product-management", "agile", "analytics", "b2b"],
+    "description": "Drive product strategy and execution for our tech platform.",
+    "requirements": [
+      "3+ years of product management",
+      "Technical background preferred",
+      "Experience with B2B products",
+      "Strong analytical skills"
+    ],
+    "postedAt": "2024-01-04T11:30:00Z",
+    "featured": false,
+    "verified": false
+  },
+  {
+    "id": "13",
+    "slug": "backend-engineer-python",
+    "title": "Backend Engineer (Python)",
+    "company": {
+      "id": "12",
+      "name": "PythonPro",
+      "slug": "pythonpro",
+      "logo": null,
+      "verified": true
+    },
+    "salary": "$100k - $150k",
+    "location": "Remote",
+    "workType": "remote",
+    "region": "global",
+    "specialization": "Backend",
+    "experience": "mid",
+    "tags": ["python", "django", "postgresql", "redis"],
+    "description": "Build robust backend APIs using Python and Django.",
+    "requirements": [
+      "3+ years of Python development",
+      "Experience with Django or Flask",
+      "Knowledge of PostgreSQL",
+      "API design experience"
+    ],
+    "postedAt": "2024-01-03T13:45:00Z",
+    "featured": false,
+    "verified": true
+  },
+  {
+    "id": "14",
+    "slug": "frontend-engineer-vue",
+    "title": "Frontend Engineer (Vue.js)",
+    "company": {
+      "id": "13",
+      "name": "VueVibes",
+      "slug": "vuevibes",
+      "logo": "https://via.placeholder.com/64",
+      "verified": false
+    },
+    "salary": "$90k - $130k",
+    "location": "Amsterdam, Netherlands",
+    "workType": "hybrid",
+    "region": "europe",
+    "specialization": "Frontend",
+    "experience": "mid",
+    "tags": ["vue.js", "javascript", "typescript", "nuxt"],
+    "description": "Create amazing user experiences with Vue.js and modern frontend tools.",
+    "requirements": [
+      "3+ years of Vue.js experience",
+      "Strong JavaScript/TypeScript skills",
+      "Experience with Nuxt.js",
+      "Portfolio of Vue projects"
+    ],
+    "postedAt": "2024-01-02T10:00:00Z",
+    "featured": false,
+    "verified": false
+  },
+  {
+    "id": "15",
+    "slug": "qa-automation-engineer",
+    "title": "QA Automation Engineer",
+    "company": {
+      "id": "14",
+      "name": "QualityAssured",
+      "slug": "qualityassured",
+      "logo": "https://via.placeholder.com/64",
+      "verified": true
+    },
+    "salary": "$80k - $120k",
+    "location": "Remote",
+    "workType": "remote",
+    "region": "global",
+    "specialization": "QA",
+    "experience": "mid",
+    "tags": ["selenium", "cypress", "javascript", "testing"],
+    "description": "Ensure quality through automated testing frameworks.",
+    "requirements": [
+      "3+ years of QA automation",
+      "Experience with Selenium or Cypress",
+      "JavaScript or Python skills",
+      "CI/CD integration experience"
+    ],
+    "postedAt": "2024-01-01T08:30:00Z",
+    "featured": false,
+    "verified": true
+  }
+]

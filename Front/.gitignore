@@ -1,0 +1,15 @@
+.DS_Store
+.idea
+.vscode
+
+node_modules/
+.next/
+out/
+dist/
+*.log
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+

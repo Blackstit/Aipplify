@@ -1,0 +1,82 @@
+[
+  {
+    "id": "1",
+    "slug": "how-to-write-perfect-resume-2024",
+    "title": "How to Write the Perfect Resume in 2024",
+    "excerpt": "Learn the latest trends and best practices for creating a resume that stands out to recruiters and AI systems.",
+    "content": "In 2024, resume writing has evolved significantly. With AI-powered applicant tracking systems (ATS) becoming the norm, your resume needs to be both human-friendly and machine-readable.\n\n## Key Elements\n\n1. **Clear Formatting**: Use standard fonts and avoid complex layouts\n2. **Keywords**: Include relevant keywords from job descriptions\n3. **Quantifiable Results**: Use numbers to show your impact\n4. **ATS Optimization**: Ensure your resume passes through ATS filters\n\n## Best Practices\n\n- Keep it to 1-2 pages\n- Use bullet points for readability\n- Include a professional summary\n- Highlight relevant skills and achievements",
+    "author": {
+      "name": "Sarah Johnson",
+      "avatar": "https://via.placeholder.com/40"
+    },
+    "category": "Career Tips",
+    "tags": ["resume", "career", "job-search"],
+    "publishedAt": "2024-01-15T10:00:00Z",
+    "readTime": "5 min read",
+    "image": "https://via.placeholder.com/800x400"
+  },
+  {
+    "id": "2",
+    "slug": "ai-in-recruiting-future",
+    "title": "The Future of AI in Recruiting",
+    "excerpt": "Exploring how artificial intelligence is transforming the recruitment process and what it means for job seekers.",
+    "content": "Artificial Intelligence is revolutionizing the recruitment industry. From automated resume screening to AI-powered job matching, technology is making hiring more efficient and effective.\n\n## AI-Powered Matching\n\nModern job boards use AI to match candidates with positions based on:\n- Skills and experience\n- Cultural fit\n- Career goals\n- Work preferences\n\n## Benefits for Job Seekers\n\n- More relevant job recommendations\n- Faster application processes\n- Better career path suggestions\n- Personalized job alerts\n\n## The Human Touch\n\nWhile AI handles the initial screening, human recruiters still play a crucial role in the final hiring decisions.",
+    "author": {
+      "name": "Michael Chen",
+      "avatar": "https://via.placeholder.com/40"
+    },
+    "category": "Technology",
+    "tags": ["ai", "recruiting", "technology"],
+    "publishedAt": "2024-01-12T14:30:00Z",
+    "readTime": "7 min read",
+    "image": "https://via.placeholder.com/800x400"
+  },
+  {
+    "id": "3",
+    "slug": "remote-work-best-practices",
+    "title": "Remote Work Best Practices for Developers",
+    "excerpt": "Essential tips for developers working remotely, from productivity hacks to maintaining work-life balance.",
+    "content": "Remote work has become the new normal for many developers. Here's how to excel in a remote environment.\n\n## Setting Up Your Workspace\n\n- Invest in a good monitor and keyboard\n- Ensure reliable internet connection\n- Create a dedicated workspace\n- Minimize distractions\n\n## Communication\n\n- Over-communicate with your team\n- Use video calls for important discussions\n- Document everything\n- Be responsive on Slack/Teams\n\n## Productivity Tips\n\n- Use time-blocking techniques\n- Take regular breaks\n- Set clear boundaries\n- Track your time\n\n## Work-Life Balance\n\n- Stick to a schedule\n- Separate work and personal time\n- Exercise regularly\n- Stay connected with colleagues",
+    "author": {
+      "name": "Emily Rodriguez",
+      "avatar": "https://via.placeholder.com/40"
+    },
+    "category": "Workplace",
+    "tags": ["remote-work", "productivity", "developers"],
+    "publishedAt": "2024-01-10T09:15:00Z",
+    "readTime": "6 min read",
+    "image": "https://via.placeholder.com/800x400"
+  },
+  {
+    "id": "4",
+    "slug": "typescript-vs-javascript-2024",
+    "title": "TypeScript vs JavaScript: Which Should You Learn in 2024?",
+    "excerpt": "A comprehensive comparison of TypeScript and JavaScript to help you decide which language to focus on.",
+    "content": "The debate between TypeScript and JavaScript continues. Let's break down the key differences.\n\n## TypeScript Advantages\n\n- Type safety catches errors early\n- Better IDE support and autocomplete\n- Easier refactoring\n- Self-documenting code\n\n## JavaScript Advantages\n\n- No compilation step\n- Faster development for small projects\n- More flexibility\n- Larger ecosystem\n\n## When to Use TypeScript\n\n- Large codebases\n- Team projects\n- Long-term maintenance\n- Enterprise applications\n\n## When to Use JavaScript\n\n- Quick prototypes\n- Small projects\n- Learning purposes\n- Simple scripts\n\n## The Verdict\n\nBoth languages have their place. TypeScript is becoming the industry standard for large applications, while JavaScript remains great for quick development.",
+    "author": {
+      "name": "David Kim",
+      "avatar": "https://via.placeholder.com/40"
+    },
+    "category": "Technology",
+    "tags": ["typescript", "javascript", "programming"],
+    "publishedAt": "2024-01-08T16:45:00Z",
+    "readTime": "8 min read",
+    "image": "https://via.placeholder.com/800x400"
+  },
+  {
+    "id": "5",
+    "slug": "salary-negotiation-tips",
+    "title": "Salary Negotiation Tips for Tech Professionals",
+    "excerpt": "Learn how to negotiate your salary effectively and get the compensation you deserve.",
+    "content": "Salary negotiation can be intimidating, but it's a crucial skill for tech professionals.\n\n## Preparation\n\n- Research market rates for your role\n- Know your worth and achievements\n- Prepare your talking points\n- Practice your pitch\n\n## During Negotiation\n\n- Let them make the first offer\n- Don't accept immediately\n- Ask for time to consider\n- Negotiate more than just salary\n\n## What to Negotiate\n\n- Base salary\n- Stock options\n- Signing bonus\n- Remote work flexibility\n- Professional development budget\n- Vacation time\n\n## Common Mistakes\n\n- Accepting the first offer\n- Not negotiating at all\n- Being too aggressive\n- Not considering the full package\n\n## After Negotiation\n\n- Get everything in writing\n- Thank them for the opportunity\n- Maintain professionalism",
+    "author": {
+      "name": "Lisa Wang",
+      "avatar": "https://via.placeholder.com/40"
+    },
+    "category": "Career Tips",
+    "tags": ["salary", "negotiation", "career"],
+    "publishedAt": "2024-01-05T11:20:00Z",
+    "readTime": "6 min read",
+    "image": "https://via.placeholder.com/800x400"
+  }
+]

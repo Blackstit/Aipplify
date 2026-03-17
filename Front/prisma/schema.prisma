@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum UserType {
+  CANDIDATE
+  RECRUITER
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  DELETED
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum JobSource {
+  PARSED      // scraped / parsed from external sources
+  HR_ADDED    // added manually by internal HR/admin/moderator
+  COMPANY_ADDED // added by a company account
+  SELF_POSTED // added without a company (individual recruiter)
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum WorkType {
+  REMOTE
+  HYBRID
+  OFFICE
+}
+
+enum ExperienceLevel {
+  INTERN
+  JUNIOR
+  MID
+  SENIOR
+  LEAD
+}
+
+enum Currency {
+  USD
+  EUR
+  GBP
+  RUB
+}
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+// ---------- Core auth/account ----------
+
+model User {
+  id             String     @id @default(cuid())
+  email          String     @unique
+  emailVerified  DateTime?
+  passwordHash   String?
+  name           String?
+
+  type           UserType   @default(CANDIDATE)
+  role           UserRole   @default(USER)
+  status         UserStatus @default(ACTIVE)
+
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  lastLoginAt    DateTime?
+
+  // Relations
+  sessions       Session[]
+  apiTokens      ApiToken[]
+  subscription   Subscription?
+
+  companiesOwned Company[]  @relation("CompanyOwner")
+  jobsCreated    Job[]      @relation("JobCreator")
+  applications   Application[]
+
+  blogPosts      BlogPost[] @relation("BlogAuthor")
+
+  @@index([type])
+  @@index([role])
+  @@index([status])
+}
+
+// Refresh-token based sessions (for web auth later)
+model Session {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshTokenHash String
+  userAgent        String?
+  ip               String?
+
+  createdAt        DateTime @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// Long-lived API tokens (for integrations later)
+model ApiToken {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  tokenHash   String   @unique
+  lastUsedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+
+  @@index([userId])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan                 SubscriptionPlan   @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([plan])
+  @@index([status])
+}
+
+// ---------- Companies / Jobs / Applications ----------
+
+model Company {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  website     String?
+  description String?
+  logoUrl     String?
+
+  verified    Boolean  @default(false)
+
+  ownerUserId String?
+  ownerUser   User?    @relation("CompanyOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobs        Job[]
+
+  @@index([ownerUserId])
+  @@index([verified])
+}
+
+model Job {
+  id            String          @id @default(cuid())
+  slug          String          @unique
+
+  title         String
+  description   String
+  requirements  String?
+
+  // Salary: keep flexible; later can normalize better
+  salaryText    String?
+  salaryMin     Int?
+  salaryMax     Int?
+  currency      Currency?
+
+  locationText  String
+  workType      WorkType        @default(REMOTE)
+  experience    ExperienceLevel @default(MID)
+
+  tags          String[]        @default([])
+
+  featured      Boolean         @default(false)
+  verified      Boolean         @default(false)
+
+  source        JobSource       @default(PARSED)
+  sourceUrl     String?
+  recruiterContact String?      // Telegram username, email, or phone
+
+  status        JobStatus       @default(PUBLISHED)
+
+  postedAt      DateTime?       // external publish date if parsed
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  companyId     String?
+  company       Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  createdByUserId String?
+  createdByUser   User?         @relation("JobCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  applications  Application[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([source])
+  @@index([featured])
+  @@index([verified])
+  @@index([workType])
+  @@index([experience])
+}
+
+model Application {
+  id         String            @id @default(cuid())
+  userId     String
+  jobId      String
+
+  status     ApplicationStatus @default(APPLIED)
+  note       String?
+
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job        Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@index([jobId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ---------- Blog ----------
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?
+  content     String
+  coverImage  String?
+
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+
+  authorUserId String?
+  author       User?    @relation("BlogAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published])
+  @@index([publishedAt])
+  @@index([authorUserId])
+}
+

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1",
+    "slug": "techcorp",
+    "name": "TechCorp",
+    "logo": "https://via.placeholder.com/64",
+    "website": "https://techcorp.com",
+    "description": "Leading technology company specializing in modern web applications and cloud solutions."
+  },
+  {
+    "id": "2",
+    "slug": "ai-innovations",
+    "name": "AI Innovations",
+    "logo": "https://via.placeholder.com/64",
+    "website": "https://aiinnovations.com",
+    "description": "Pioneering AI research and development company focused on machine learning and artificial intelligence solutions."
+  },
+  {
+    "id": "3",
+    "slug": "cryptolabs",
+    "name": "CryptoLabs",
+    "logo": "https://via.placeholder.com/64",
+    "website": "https://cryptolabs.io",
+    "description": "Building the future of decentralized applications and blockchain technology."
+  },
+  {
+    "id": "4",
+    "slug": "startuphub",
+    "name": "StartupHub",
+    "logo": "https://via.placeholder.com/64",
+    "website": "https://startuphub.com",
+    "description": "Fast-growing startup focused on innovative web solutions and digital products."
+  },
+  {
+    "id": "5",
+    "slug": "devstudio",
+    "name": "DevStudio",
+    "logo": "https://via.placeholder.com/64",
+    "website": "https://devstudio.com",
+    "description": "Full-service development studio creating beautiful and functional web applications."
+  }
+]

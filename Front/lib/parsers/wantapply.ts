@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { prisma } from "../prisma"
 
 // Import types from Prisma schema
 type WorkType = "REMOTE" | "HYBRID" | "OFFICE"

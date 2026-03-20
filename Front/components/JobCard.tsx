@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Job } from "@/lib/mockJobs"
+import type { JobFrontend } from "@/lib/jobs"
 import { Tag } from "./Tag"
 import { Card } from "@/components/ui/card"
 import { CompanyLogo } from "./CompanyLogo"
@@ -12,7 +12,7 @@ import { formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
 
 interface JobCardProps {
-  job: Job
+  job: JobFrontend
 }
 
 export function JobCard({ job }: JobCardProps) {

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { prisma } from "../prisma"
 import type { WorkType, ExperienceLevel, Currency, JobSource, JobStatus } from "@prisma/client"
 
 interface DegenCryptoJob {

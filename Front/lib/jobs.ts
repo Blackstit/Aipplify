@@ -16,6 +16,8 @@ export interface JobFrontend {
   salary: string
   location: string
   workType: "remote" | "hybrid" | "office"
+  region: "global" | "europe" | "usa" | "asia"
+  specialization: string
   experience: "intern" | "junior" | "mid" | "senior" | "lead"
   tags: string[]
   description: string
@@ -24,6 +26,7 @@ export interface JobFrontend {
   featured: boolean
   verified: boolean
   recruiterContact?: string | null
+  sourceUrl?: string | null
 }
 
 // Transform Prisma Job to frontend format
@@ -59,6 +62,7 @@ export function transformJob(job: Job & { company: Company | null }): JobFronten
     featured: job.featured,
     verified: job.verified || job.company?.verified || false,
     recruiterContact: job.recruiterContact || null,
+    sourceUrl: job.sourceUrl || null,
   }
 }
 

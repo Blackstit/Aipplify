@@ -9,11 +9,11 @@
 
 import path from "path"
 import dotenv from "dotenv"
-import puppeteer from "puppeteer"
+import puppeteer, { type Page } from "puppeteer"
 import { saveJob } from "../lib/parsers/wantapply"
 
 // Улучшенная функция для ожидания Cloudflare
-async function waitForCloudflare(page: puppeteer.Page, maxWait = 30000) {
+async function waitForCloudflare(page: Page, maxWait = 30000) {
   const startTime = Date.now()
   while (Date.now() - startTime < maxWait) {
     const title = await page.title()
@@ -67,7 +67,7 @@ async function main() {
   console.log("")
 
   const browser = await puppeteer.launch({
-    headless: "new", // можно поменять на false, чтобы видеть браузер
+    headless: true, // false — показать окно браузера
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   })
 

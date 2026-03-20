@@ -1,0 +1,20 @@
+[Unit]
+Description=Aipplify Next.js (production)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/Aipplify/Front
+EnvironmentFile=-/root/Aipplify/Front/.env
+# Слушаем на всех интерфейсах — для Nginx в Docker / reverse proxy
+ExecStart=/usr/bin/npx next start -H 0.0.0.0 -p 3000
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/var/log/aipplify-next.log
+StandardError=append:/var/log/aipplify-next.log
+
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -23,7 +23,7 @@ interface PopoverContentProps {
 const PopoverContext = React.createContext<{
   open: boolean
   setOpen: (open: boolean) => void
-  triggerRef: React.RefObject<HTMLElement>
+  triggerRef: React.MutableRefObject<HTMLElement | null>
 }>({
   open: false,
   setOpen: () => {},
@@ -31,7 +31,7 @@ const PopoverContext = React.createContext<{
 })
 
 export function Popover({ open, onOpenChange, children }: PopoverProps) {
-  const triggerRef = React.useRef<HTMLElement>(null)
+  const triggerRef = React.useRef<HTMLElement | null>(null)
   
   return (
     <PopoverContext.Provider value={{ open, setOpen: onOpenChange, triggerRef }}>

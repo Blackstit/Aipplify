@@ -46,6 +46,7 @@ enum JobSource {
   HR_ADDED    // added manually by internal HR/admin/moderator
   COMPANY_ADDED // added by a company account
   SELF_POSTED // added without a company (individual recruiter)
+  JOB_ECO     // imported from job-eco public API
 }
 
 enum JobStatus {

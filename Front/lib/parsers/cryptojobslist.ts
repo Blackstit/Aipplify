@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { prisma } from "../prisma"
 import Parser from "rss-parser"
 import type { WorkType, ExperienceLevel, Currency, JobSource, JobStatus } from "@prisma/client"
 
@@ -171,6 +171,14 @@ async function saveCompany(companyName: string) {
     throw new Error("Company name is required")
   }
 
+  // Fast path: if company already exists by name, do not generate new slug candidates.
+  const existingByName = await prisma.company.findFirst({
+    where: { name: companyName },
+  })
+  if (existingByName) {
+    return { saved: false, company: existingByName }
+  }
+
   const baseSlug = companyName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -183,22 +191,14 @@ async function saveCompany(companyName: string) {
     slug = `${baseSlug}-${counter++}`
   }
 
-  let company = await prisma.company.findFirst({
-    where: { name: companyName },
+  const company = await prisma.company.create({
+    data: {
+      slug,
+      name: companyName,
+      verified: false,
+    },
   })
-
-  if (!company) {
-    company = await prisma.company.create({
-      data: {
-        slug,
-        name: companyName,
-        verified: false,
-      },
-    })
-    return { saved: true, company }
-  }
-
-  return { saved: false, company }
+  return { saved: true, company }
 }
 
 // Save or update job
@@ -207,11 +207,8 @@ export async function saveJob(item: CryptoJobsListRSSItem) {
   const companyResult = await saveCompany(companyName)
   const company = companyResult.company
 
-  // Generate slug from title and company
-  const baseSlug = `${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-at-${company.slug}`
-    .replace(/^-+|-+$/g, "")
-
-  const slug = await generateUniqueSlug(baseSlug)
+  // Keep base slug deterministic for matching/updating existing records.
+  const baseSlug = `${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-at-${company.slug}`.replace(/^-+|-+$/g, "")
 
   // Extract description HTML
   const descriptionHtml = item.content || item["content:encoded"] || item.contentSnippet || ""
@@ -251,6 +248,9 @@ export async function saveJob(item: CryptoJobsListRSSItem) {
       OR: [{ slug: baseSlug }, { sourceUrl: item.link }],
     },
   })
+
+  // Generate unique slug only for truly new records.
+  const slug = existingJob ? existingJob.slug : await generateUniqueSlug(baseSlug)
 
   const jobPayload = {
     slug,
@@ -331,7 +331,8 @@ export async function parseAndSaveJobs() {
 
     console.log(`✅ Got ${feed.items.length} jobs from RSS feed`)
 
-    for (const item of feed.items) {
+    for (let i = 0; i < feed.items.length; i++) {
+      const item = feed.items[i]
       try {
         // Check if job exists
         const existing = await prisma.job.findFirst({
@@ -358,6 +359,10 @@ export async function parseAndSaveJobs() {
         const errorMsg = `Error saving job "${item.title}": ${error instanceof Error ? error.message : String(error)}`
         console.error(`  ❌ ${errorMsg}`)
         results.errors.push(errorMsg)
+      }
+
+      if ((i + 1) % 20 === 0) {
+        console.log(`⏳ Progress: ${i + 1}/${feed.items.length}`)
       }
     }
 

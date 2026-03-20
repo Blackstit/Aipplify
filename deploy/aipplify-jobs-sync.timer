@@ -1,0 +1,11 @@
+[Unit]
+Description=Aipplify — таймер синхронизации вакансий (каждые 3 часа)
+
+[Timer]
+# 00:00, 03:00, 06:00, … по локальному времени сервера (см. timedatectl)
+OnCalendar=*-*-* 00,03,06,09,12,15,18,21:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

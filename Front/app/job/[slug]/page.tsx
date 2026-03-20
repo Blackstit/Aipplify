@@ -102,7 +102,7 @@ export default async function JobPage({ params }: Props) {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2 mt-4">
-                      {job.tags.map((tag) => (
+                      {job.tags.map((tag: string) => (
                         <Tag key={tag}>{tag}</Tag>
                       ))}
                     </div>

@@ -138,6 +138,21 @@ npm run start
 
 Запускать лучше через process manager (например, `pm2`) или через systemd.
 
+**Systemd (рекомендуется на VPS):** после `npm run build` один раз:
+```bash
+sudo cp deploy/aipplify-next.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now aipplify-next.service
+```
+Сервис слушает **`0.0.0.0:3000`** (удобно для Nginx в Docker). Лог: `/var/log/aipplify-next.log`. После деплоя: `cd Front && npm run build && sudo systemctl restart aipplify-next`.
+
+### 5a) Автообновление вакансий (каждые 3 часа)
+
+Сайт читает только БД; новые вакансии появляются после синхронизации парсеров.
+
+- Команда: в каталоге `Front` — `npm run jobs:sync` (DegenCryptoJobs + CryptoJobsList RSS + job-eco при `JOB_ECO_API_KEY` в `.env`).
+- Расписание: **systemd timer** или **cron** — пошагово в [`deploy/README-jobs-sync.md`](deploy/README-jobs-sync.md).
+
 ### 6) Nginx reverse proxy
 Пример конфига (подставьте домен):
 ```nginx

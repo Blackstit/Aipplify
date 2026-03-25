@@ -76,3 +76,31 @@ npm run db:push
 ```
 
 Если видишь сообщение типа "✨ Your database is now in sync with your schema" - всё отлично!
+
+---
+
+## На сайте 0 вакансий или API: `Authentication failed` для `postgres`
+
+Приложение подключается к Postgres **по сети** (`localhost:5432`) с паролем из `Front/.env` (`DATABASE_URL`).  
+Пароль суперпользователя `postgres` **хранится внутри тома** контейнера: переменная `POSTGRES_PASSWORD` в `docker-compose.yml` учитывается **только при первом создании** тома. Если пароли разошлись, Prisma падает с ошибкой авторизации, а список вакансий пустой.
+
+**Синхронизировать пароль с `.env` (пример для пароля `postgres`):**
+
+```bash
+docker exec aipplify-postgres psql -U postgres -d postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+```
+
+Проверка с хоста:
+
+```bash
+docker run --rm --network host -e PGPASSWORD=postgres postgres:16-alpine \
+  psql -h 127.0.0.1 -U postgres -d aipplify -c 'SELECT COUNT(*) FROM "Job";'
+```
+
+Перезапуск Next (если используешь systemd):
+
+```bash
+sudo systemctl restart aipplify-next
+```
+
+**Как не ловить снова:** не меняй `POSTGRES_PASSWORD` в compose без смены пароля в БД и в `DATABASE_URL`; после смены пароля везде делай `ALTER USER` под тот же пароль.

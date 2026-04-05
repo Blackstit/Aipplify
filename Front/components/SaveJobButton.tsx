@@ -2,93 +2,116 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Bookmark } from "lucide-react"
-import { getCurrentUser } from "@/lib/session"
-import { useRouter } from "next/navigation"
+import { Bookmark, Check } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+export interface SavedJob {
+  id: string
+  slug: string
+  title: string
+  company: { name: string; logo: string | null; verified: boolean }
+  salary: string
+  location: string
+  experience: string
+  tags: string[]
+  postedAt: string
+  savedAt: string
+}
 
 interface SaveJobButtonProps {
   jobId: string
   jobSlug: string
+  jobTitle?: string
+  company?: { name: string; logo: string | null; verified: boolean }
+  salary?: string
+  location?: string
+  experience?: string
+  tags?: string[]
+  postedAt?: string
 }
 
-export function SaveJobButton({ jobId, jobSlug }: SaveJobButtonProps) {
+export function getSavedJobs(): SavedJob[] {
+  if (typeof window === "undefined") return []
+  try {
+    return JSON.parse(localStorage.getItem("savedJobs") || "[]")
+  } catch {
+    return []
+  }
+}
+
+function writeSavedJobs(jobs: SavedJob[]) {
+  localStorage.setItem("savedJobs", JSON.stringify(jobs))
+  window.dispatchEvent(new Event("saved-jobs-changed"))
+}
+
+export function SaveJobButton({
+  jobId,
+  jobSlug,
+  jobTitle = "",
+  company = { name: "Unknown", logo: null, verified: false },
+  salary = "",
+  location = "",
+  experience = "",
+  tags = [],
+  postedAt = "",
+}: SaveJobButtonProps) {
   const [isSaved, setIsSaved] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
-    async function checkSaved() {
-      const user = getCurrentUser()
-      if (!user) return
+    setIsSaved(getSavedJobs().some((j) => j.id === jobId))
 
-      try {
-        const res = await fetch(`/api/saved-jobs?userId=${user.id}`)
-        if (res.ok) {
-          const data = await res.json()
-          const saved = data.jobs.some((job: any) => job.id === jobId)
-          setIsSaved(saved)
-        }
-      } catch (error) {
-        console.error("Error checking saved status:", error)
-      }
+    const handler = () => setIsSaved(getSavedJobs().some((j) => j.id === jobId))
+    window.addEventListener("saved-jobs-changed", handler)
+    window.addEventListener("storage", handler)
+    return () => {
+      window.removeEventListener("saved-jobs-changed", handler)
+      window.removeEventListener("storage", handler)
     }
-
-    checkSaved()
   }, [jobId])
 
-  const handleToggle = async () => {
-    const user = getCurrentUser()
-
-    if (!user) {
-      router.push(`/auth?redirect=/job/${jobSlug}`)
-      return
-    }
-
-    setLoading(true)
-
-    try {
-      if (isSaved) {
-        // Unsave
-        const res = await fetch(`/api/saved-jobs?jobId=${jobId}&userId=${user.id}`, {
-          method: "DELETE",
-        })
-        if (res.ok) {
-          setIsSaved(false)
-          // Dispatch event to update header counter
-          window.dispatchEvent(new Event("saved-jobs-changed"))
-        }
-      } else {
-        // Save
-        const res = await fetch("/api/saved-jobs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jobId,
-            userId: user.id,
-          }),
-        })
-        if (res.ok) {
-          setIsSaved(true)
-          // Dispatch event to update header counter
-          window.dispatchEvent(new Event("saved-jobs-changed"))
-        }
+  const handleToggle = () => {
+    const saved = getSavedJobs()
+    if (isSaved) {
+      writeSavedJobs(saved.filter((j) => j.id !== jobId))
+      setIsSaved(false)
+    } else {
+      const entry: SavedJob = {
+        id: jobId,
+        slug: jobSlug,
+        title: jobTitle,
+        company,
+        salary,
+        location,
+        experience,
+        tags: tags.slice(0, 8),
+        postedAt,
+        savedAt: new Date().toISOString(),
       }
-    } catch (error) {
-      console.error("Error toggling save:", error)
-    } finally {
-      setLoading(false)
+      writeSavedJobs([entry, ...saved])
+      setIsSaved(true)
     }
   }
 
   return (
     <Button
       variant="outline"
-      className="w-full"
+      className={cn(
+        "w-full transition-colors",
+        isSaved && "border-primary/40 text-primary bg-primary/5",
+      )}
       onClick={handleToggle}
-      disabled={loading}
     >
-      <Bookmark className={`h-4 w-4 mr-2 ${isSaved ? "fill-current" : ""}`} />
-      {isSaved ? "Saved" : "Save Job"}
+      {isSaved ? (
+        <>
+          <Check className="h-4 w-4 mr-2" />
+          Saved
+        </>
+      ) : (
+        <>
+          <Bookmark className="h-4 w-4 mr-2" />
+          Save Job
+        </>
+      )}
     </Button>
   )
 }

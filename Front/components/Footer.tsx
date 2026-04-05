@@ -1,113 +1,141 @@
 import Link from "next/link"
-import { Facebook, Twitter, Linkedin, Instagram, Github } from "lucide-react"
+import { Twitter, Linkedin, Github } from "lucide-react"
 
 export function Footer() {
-  const jobCategories = [
-    "Frontend Developer",
-    "Backend Developer",
-    "Full Stack Developer",
-    "AI/ML Engineer",
-    "DevOps Engineer",
-    "Blockchain Developer",
-    "Mobile Developer",
-    "Data Scientist"
-  ]
-
-  const locations = [
-    "Remote Jobs",
-    "USA Jobs",
-    "Europe Jobs",
-    "Asia Jobs",
-    "Global Jobs"
-  ]
-
-  const experienceLevels = [
-    "Intern",
-    "Junior",
-    "Mid Level",
-    "Senior",
-    "Lead"
-  ]
-
   return (
-    <footer className="bg-gray-50 border-t border-border mt-auto">
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-          {/* Company Info */}
-          <div className="lg:col-span-2">
+    <footer className="relative bg-gradient-to-b from-gray-950 to-gray-900 text-gray-400 mt-auto overflow-hidden">
+      {/* Grid pattern */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <svg
+          className="absolute w-[200%] h-[200%] -left-1/2 -top-1/4 opacity-30"
+          style={{
+            transform: "perspective(600px) rotateX(60deg)",
+            transformOrigin: "center top",
+          }}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <pattern id="footer-grid" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#footer-grid)" />
+        </svg>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 pt-16 pb-10 relative z-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-10">
+
+          {/* Brand */}
+          <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="h-6 w-6 bg-gradient-primary rounded"></div>
-              <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Aipplify
-              </span>
+              <div className="h-7 w-7 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg" />
+              <span className="text-xl font-bold text-white">Aipplify</span>
             </Link>
-            <p className="text-gray-600 mb-4">
-              AI-powered job board connecting talented professionals with top companies worldwide.
+            <p className="text-sm leading-relaxed mb-5 max-w-xs">
+              AI-powered job board for crypto, Web3, and artificial intelligence careers.
+              Every listing is scored for quality and safety.
             </p>
-            <div className="flex gap-4">
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                <Facebook className="h-5 w-5" />
+            <div className="flex gap-3">
+              <a href="https://twitter.com/aipplify" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 transition-all">
+                <Twitter className="h-4 w-4" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                <Twitter className="h-5 w-5" />
+              <a href="https://linkedin.com/company/aipplify" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 transition-all">
+                <Linkedin className="h-4 w-4" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                <Linkedin className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
-                <Github className="h-5 w-5" />
+              <a href="https://github.com/aipplify" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 transition-all">
+                <Github className="h-4 w-4" />
               </a>
             </div>
           </div>
 
-          {/* Job Categories */}
+          {/* Popular Searches */}
           <div>
-            <h3 className="font-semibold mb-4">Job Categories</h3>
-            <ul className="space-y-2">
-              {jobCategories.map((category) => (
-                <li key={category}>
-                  <Link 
-                    href={`/jobs?category=${category.toLowerCase().replace(/\s+/g, '-')}`}
-                    className="text-sm text-gray-600 hover:text-primary transition-colors"
-                  >
-                    {category}
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">Popular Searches</h4>
+            <ul className="space-y-2.5">
+              {[
+                { label: "Remote Jobs", q: "remote" },
+                { label: "AI Engineer Jobs", q: "ai+engineer" },
+                { label: "Crypto Jobs", q: "crypto" },
+                { label: "Web3 Developer", q: "web3+developer" },
+                { label: "Solidity Jobs", q: "solidity" },
+                { label: "Data Scientist", q: "data+scientist" },
+                { label: "ML Engineer", q: "machine+learning" },
+                { label: "DeFi Jobs", q: "defi" },
+              ].map((item) => (
+                <li key={item.q}>
+                  <Link href={`/jobs?search=${item.q}`} className="text-sm hover:text-white transition-colors">
+                    {item.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Locations */}
+          {/* By Skill */}
           <div>
-            <h3 className="font-semibold mb-4">Locations</h3>
-            <ul className="space-y-2">
-              {locations.map((location) => (
-                <li key={location}>
-                  <Link 
-                    href={`/jobs?location=${location.toLowerCase().replace(/\s+/g, '-')}`}
-                    className="text-sm text-gray-600 hover:text-primary transition-colors"
-                  >
-                    {location}
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">By Skill</h4>
+            <ul className="space-y-2.5">
+              {[
+                { label: "React / Next.js", q: "react" },
+                { label: "Python", q: "python" },
+                { label: "Rust", q: "rust" },
+                { label: "TypeScript", q: "typescript" },
+                { label: "Smart Contracts", q: "smart+contract" },
+                { label: "DevOps / Infra", q: "devops" },
+                { label: "Product Manager", q: "product+manager" },
+                { label: "Security Audit", q: "security+audit" },
+              ].map((item) => (
+                <li key={item.q}>
+                  <Link href={`/jobs?search=${item.q}`} className="text-sm hover:text-white transition-colors">
+                    {item.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Experience Levels */}
+          {/* Companies */}
           <div>
-            <h3 className="font-semibold mb-4">Experience</h3>
-            <ul className="space-y-2">
-              {experienceLevels.map((level) => (
-                <li key={level}>
-                  <Link 
-                    href={`/jobs?experience=${level.toLowerCase().replace(/\s+/g, '-')}`}
-                    className="text-sm text-gray-600 hover:text-primary transition-colors"
-                  >
-                    {level}
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">Top Companies</h4>
+            <ul className="space-y-2.5">
+              {[
+                { label: "Binance", slug: "binance" },
+                { label: "Coinbase", slug: "coinbase" },
+                { label: "BitMEX", slug: "bitmex" },
+                { label: "Tether", slug: "tether-operations-limited" },
+                { label: "BrainRocket", slug: "brainrocket" },
+                { label: "10ARX", slug: "10arx" },
+              ].map((c) => (
+                <li key={c.slug}>
+                  <Link href={`/companies/${c.slug}`} className="text-sm hover:text-white transition-colors">
+                    {c.label}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/companies" className="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+                  All companies &rarr;
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">Resources</h4>
+            <ul className="space-y-2.5">
+              {[
+                { label: "About Aipplify", href: "/about" },
+                { label: "Blog", href: "/blog" },
+                { label: "For Recruiters", href: "/for-recruiters" },
+                { label: "Companies", href: "/companies" },
+                { label: "Contact", href: "/contact" },
+                { label: "Saved Jobs", href: "/saved-jobs" },
+              ].map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className="text-sm hover:text-white transition-colors">
+                    {item.label}
                   </Link>
                 </li>
               ))}
@@ -115,33 +143,17 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Section */}
-        <div className="border-t border-border mt-8 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex flex-wrap gap-6 text-sm text-gray-600">
-              <Link href="/about" className="hover:text-primary transition-colors">
-                About Us
-              </Link>
-              <Link href="/blog" className="hover:text-primary transition-colors">
-                Blog
-              </Link>
-              <Link href="/contact" className="hover:text-primary transition-colors">
-                Contact
-              </Link>
-              <Link href="/for-recruiters" className="hover:text-primary transition-colors">
-                For Recruiters
-              </Link>
-              <Link href="/privacy" className="hover:text-primary transition-colors">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="hover:text-primary transition-colors">
-                Terms of Service
-              </Link>
-            </div>
-            <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} Aipplify. All rights reserved.
-            </p>
+        {/* Bottom */}
+        <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-gray-500">
+            <Link href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</Link>
+            <Link href="/jobs" className="hover:text-gray-300 transition-colors">Browse Jobs</Link>
+            <Link href="/blog" className="hover:text-gray-300 transition-colors">Blog</Link>
           </div>
+          <p className="text-xs text-gray-600">
+            &copy; {new Date().getFullYear()} Aipplify. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

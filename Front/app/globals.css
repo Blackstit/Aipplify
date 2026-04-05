@@ -35,3 +35,12 @@
 .featured-card {
   animation: featured-glow 2s ease-in-out infinite;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-in-up {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

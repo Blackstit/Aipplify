@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { fetchVacancies } from "@/lib/job-eco-api"
+
+export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
   try {
@@ -10,61 +12,33 @@ export async function GET(request: Request) {
       return NextResponse.json({ suggestions: [] })
     }
 
-    const searchTerm = query.toLowerCase()
+    const params = new URLSearchParams()
+    params.set("page", "1")
+    params.set("per_page", "10")
+    params.set("search", query)
 
-    // Get job titles and company names
-    const [jobTitles, companies] = await Promise.all([
-      prisma.job.findMany({
-        where: {
-          status: "PUBLISHED",
-          title: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        },
-        select: {
-          title: true,
-        },
-        distinct: ["title"],
-        take: 5,
-        orderBy: {
-          createdAt: "desc",
-        },
-      }),
-      prisma.company.findMany({
-        where: {
-          name: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        },
-        select: {
-          name: true,
-        },
-        take: 5,
-        orderBy: {
-          createdAt: "desc",
-        },
-      }),
-    ])
+    const data = await fetchVacancies(params)
+    const items = data.items || []
 
-    const suggestions = [
-      ...jobTitles.map((job) => ({
-        type: "job" as const,
-        text: job.title,
-      })),
-      ...companies.map((company) => ({
-        type: "company" as const,
-        text: company.name,
-      })),
-    ]
+    const titleSet = new Set<string>()
+    const companySet = new Set<string>()
+    const suggestions: { type: string; text: string }[] = []
+
+    for (const item of items) {
+      if (titleSet.size < 5 && item.title && !titleSet.has(item.title)) {
+        titleSet.add(item.title)
+        suggestions.push({ type: "job", text: item.title })
+      }
+      const cn = item.company_name || item.company?.name
+      if (cn && companySet.size < 3 && !companySet.has(cn)) {
+        companySet.add(cn)
+        suggestions.push({ type: "company", text: cn })
+      }
+    }
 
     return NextResponse.json({ suggestions })
   } catch (error) {
     console.error("Error fetching search suggestions:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch suggestions", details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    )
+    return NextResponse.json({ suggestions: [] })
   }
 }

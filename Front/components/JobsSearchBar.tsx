@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Search, Settings, Sparkles } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -17,10 +17,11 @@ interface QuickFilter {
 
 interface JobsSearchBarProps {
   onSearchChange?: (query: string) => void
+  defaultValue?: string
 }
 
-export function JobsSearchBar({ onSearchChange }: JobsSearchBarProps) {
-  const [searchQuery, setSearchQuery] = useState("")
+export function JobsSearchBar({ onSearchChange, defaultValue = "" }: JobsSearchBarProps) {
+  const [searchQuery, setSearchQuery] = useState(defaultValue)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isConfigureOpen, setIsConfigureOpen] = useState(false)
   const [isAISearchOpen, setIsAISearchOpen] = useState(false)
@@ -53,13 +54,15 @@ export function JobsSearchBar({ onSearchChange }: JobsSearchBarProps) {
     setShowSuggestions(false)
   }
   
+  const onSearchChangeRef = useRef(onSearchChange)
+  onSearchChangeRef.current = onSearchChange
+
   useEffect(() => {
-    // Update parent when search query changes (debounced)
     const timeoutId = setTimeout(() => {
-      onSearchChange?.(searchQuery)
+      onSearchChangeRef.current?.(searchQuery)
     }, 500)
     return () => clearTimeout(timeoutId)
-  }, [searchQuery, onSearchChange])
+  }, [searchQuery])
 
   const handleSelectSuggestion = (text: string) => {
     setSearchQuery(text)

@@ -27,7 +27,7 @@ export function ApplyButton({
     
     if (!user) {
       // Redirect to auth if not logged in
-      router.push(`/auth?redirect=/job/${jobSlug}`)
+      router.push(`/auth?redirect=/jobs/${jobSlug}`)
       return
     }
 

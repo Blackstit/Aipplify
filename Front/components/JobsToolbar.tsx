@@ -63,6 +63,8 @@ export function JobsToolbar({
             <SelectItem value="oldest">Oldest</SelectItem>
             <SelectItem value="salary-high">Salary: High</SelectItem>
             <SelectItem value="salary-low">Salary: Low</SelectItem>
+            <SelectItem value="score-high">AI Score: High</SelectItem>
+            <SelectItem value="score-low">AI Score: Low</SelectItem>
             <SelectItem value="relevance">Relevance</SelectItem>
           </SelectContent>
         </Select>

@@ -15,34 +15,26 @@ export function ContactManagerBanner() {
 
   return (
     <>
-      <Card className="bg-gradient-primary border-0">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            {/* Icon on the left */}
-            <div className="flex-shrink-0">
-              <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center">
-                <Headphones className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            
-            {/* Text content and button */}
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-white mb-2 leading-tight">
-                Need help publishing a vacancy?
-              </h3>
-              <p className="text-sm text-white/90 mb-4">
-                Our manager can help you write and post it the right way.
-              </p>
-              <Button
-                onClick={() => setIsOpen(true)}
-                variant="outline"
-                className="bg-white border-gray-300 text-gray-900 hover:bg-gray-50 shadow-sm"
-              >
-                <MessageCircle className="h-4 w-4 mr-2 text-gray-900" />
-                Contact manager
-              </Button>
-            </div>
+      <Card className="bg-gradient-primary border-0 overflow-hidden">
+        <CardContent className="p-5 text-center">
+          <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+            <Headphones className="h-6 w-6 text-white" />
           </div>
+          <h3 className="text-base font-bold text-white mb-1.5 leading-tight">
+            Need help publishing a vacancy?
+          </h3>
+          <p className="text-xs text-white/80 mb-3 leading-relaxed">
+            Our manager can help you write and post it the right way.
+          </p>
+          <Button
+            onClick={() => setIsOpen(true)}
+            variant="outline"
+            size="sm"
+            className="bg-white border-0 text-gray-900 hover:bg-gray-50 shadow-sm text-xs h-8 w-full"
+          >
+            <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
+            Contact manager
+          </Button>
         </CardContent>
       </Card>
 

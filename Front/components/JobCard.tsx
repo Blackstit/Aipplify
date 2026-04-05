@@ -7,26 +7,25 @@ import { Tag } from "./Tag"
 import { Card } from "@/components/ui/card"
 import { CompanyLogo } from "./CompanyLogo"
 import { VerifiedBadge } from "./VerifiedBadge"
-import { MapPin, Clock, Briefcase, DollarSign, Users, Eye } from "lucide-react"
+import { MapPin, Clock, Briefcase, DollarSign, Eye, Sparkles } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
 
 interface JobCardProps {
   job: JobFrontend
+  compact?: boolean
 }
 
-export function JobCard({ job }: JobCardProps) {
+export function JobCard({ job, compact = false }: JobCardProps) {
   const [isViewed, setIsViewed] = useState(false)
   const postedTime = formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })
 
   useEffect(() => {
-    // Check if job is viewed
     if (typeof window !== "undefined") {
       const viewedJobs = JSON.parse(localStorage.getItem("viewedJobs") || "[]") as string[]
       setIsViewed(viewedJobs.includes(job.slug))
     }
 
-    // Listen for job viewed events
     const handleJobViewed = () => {
       if (typeof window !== "undefined") {
         const viewedJobs = JSON.parse(localStorage.getItem("viewedJobs") || "[]") as string[]
@@ -43,90 +42,123 @@ export function JobCard({ job }: JobCardProps) {
     }
   }, [job.slug])
 
+  const aiScore = job.aiScore
+  const scoreColor =
+    aiScore != null && aiScore >= 8
+      ? "bg-emerald-100 text-emerald-700"
+      : aiScore != null && aiScore >= 5
+        ? "bg-amber-100 text-amber-700"
+        : aiScore != null
+          ? "bg-rose-100 text-rose-700"
+          : ""
+
+  const isFeatured = job.featured
+  const isVerified = !isFeatured && (job.verified || job.company.verified)
+
   return (
-    <Link href={`/job/${job.slug}`}>
-      <Card 
+    <Link href={`/jobs/${job.slug}`}>
+      <Card
         className={cn(
-          "p-6 hover:shadow-lg transition-all duration-200 cursor-pointer relative overflow-hidden",
-          job.featured && "border-yellow-400 border-2 featured-card bg-gradient-to-br from-yellow-50/50 to-white",
-          !job.featured && (job.verified || job.company.verified) && "border-primary border-2 bg-gradient-to-br from-blue-50/50 to-white",
-          !job.featured && !job.verified && !job.company.verified && "border-border bg-white"
+          "p-5 hover:shadow-md transition-all duration-200 cursor-pointer relative overflow-hidden",
+          compact && "p-3",
+          isFeatured &&
+            "border-amber-400 border-2 bg-gradient-to-br from-amber-50/40 to-white",
+          isVerified &&
+            "border-primary/40 border bg-gradient-to-br from-blue-50/30 to-white",
+          !isFeatured && !isVerified && "border-gray-200 bg-white",
         )}
       >
-        <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
-          {job.featured && (
-            <div className="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full">
-              HOT VACANCY!
-            </div>
+        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+          {aiScore != null && !Number.isNaN(aiScore) && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums",
+                scoreColor,
+              )}
+              title="AI Quality Score"
+            >
+              <Sparkles className="h-3 w-3" />
+              <span className="text-[9px] font-bold opacity-70 uppercase">AI</span>
+              {aiScore.toFixed(1)}
+            </span>
+          )}
+          {isFeatured && (
+            <span className="bg-amber-400 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+              Hot
+            </span>
           )}
           {isViewed && (
-            <div className="bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1">
+            <span className="bg-gray-100 text-gray-500 text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-0.5">
               <Eye className="h-3 w-3" />
               Viewed
-            </div>
+            </span>
           )}
         </div>
-        
-        <div className="flex gap-4">
+
+        <div className="flex gap-3">
           <div className="flex-shrink-0">
-            <CompanyLogo 
-              logo={job.company.logo} 
+            <CompanyLogo
+              logo={job.company.logo}
               name={job.company.name}
-              size={64}
+              size={compact ? 44 : 56}
             />
           </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="mb-3">
-              <div className="flex items-center gap-2 mb-1">
-                <p className="text-sm font-medium text-gray-600">
+
+          <div className="flex-1 min-w-0 pr-20">
+            <div className="mb-2">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <p className="text-xs font-medium text-gray-500 truncate">
                   {job.company.name}
                 </p>
-                {job.featured && (
-                  <VerifiedBadge type="featured" />
-                )}
-                {!job.featured && job.company.verified && (
-                  <VerifiedBadge type="verified" />
-                )}
+                {isFeatured && <VerifiedBadge type="featured" />}
+                {isVerified && <VerifiedBadge type="verified" />}
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3
+                className={cn(
+                  "font-bold text-gray-900 leading-snug",
+                  compact ? "text-base" : "text-lg",
+                )}
+              >
                 {job.title}
               </h3>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 mb-3 text-sm text-gray-600">
-              <div className="flex items-center gap-1">
-                <Briefcase className="h-4 w-4" />
-                <span className="capitalize">{job.experience}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <DollarSign className="h-4 w-4" />
-                <span className="font-semibold text-gray-900">{job.salary}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                <span>{job.location}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                <span className="capitalize">{job.workType}</span>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              {job.tags.slice(0, 6).map((tag) => (
-                <Tag key={tag}>{tag}</Tag>
-              ))}
-              {job.tags.length > 6 && (
-                <Tag>+{job.tags.length - 6} more</Tag>
+            <div
+              className={cn(
+                "flex flex-wrap items-center gap-3 mb-2 text-gray-600",
+                compact ? "text-[11px]" : "text-xs",
               )}
+            >
+              <span className="flex items-center gap-1">
+                <Briefcase className="h-3.5 w-3.5" />
+                <span className="capitalize">{job.experience}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <DollarSign className="h-3.5 w-3.5" />
+                <span className="font-semibold text-gray-900">{job.salary}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                {job.location}
+              </span>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{postedTime}</span>
+            {!compact && (
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                {job.tags.slice(0, 5).map((tag) => (
+                  <Tag key={tag}>{tag}</Tag>
+                ))}
+                {job.tags.length > 5 && (
+                  <span className="text-[10px] text-gray-400">
+                    +{job.tags.length - 5}
+                  </span>
+                )}
               </div>
+            )}
+
+            <div className="flex items-center text-[11px] text-gray-400">
+              <Clock className="h-3 w-3 mr-1" />
+              {postedTime}
             </div>
           </div>
         </div>

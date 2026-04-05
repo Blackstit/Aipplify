@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -17,22 +16,30 @@ interface QuickFiltersProps {
 
 export function QuickFilters({ filters, onChange }: QuickFiltersProps) {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="flex flex-wrap gap-x-4 gap-y-1.5">
       {filters.map((filter) => (
-        <button
+        <label
           key={filter.id}
-          type="button"
-          onClick={() => onChange(filter.id, !filter.checked)}
-          className={cn(
-            "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2",
-            filter.checked
-              ? "bg-gradient-primary text-white shadow-sm"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          )}
+          className="flex items-center gap-1.5 cursor-pointer select-none group"
         >
-          {filter.checked && <Check className="h-4 w-4" />}
-          {filter.label}
-        </button>
+          <span
+            className={cn(
+              "inline-flex items-center justify-center w-4 h-4 rounded border transition-colors",
+              filter.checked
+                ? "bg-primary border-primary"
+                : "border-gray-300 group-hover:border-gray-400",
+            )}
+            onClick={() => onChange(filter.id, !filter.checked)}
+          >
+            {filter.checked && <Check className="h-3 w-3 text-white" />}
+          </span>
+          <span
+            className="text-xs text-gray-600 group-hover:text-gray-900"
+            onClick={() => onChange(filter.id, !filter.checked)}
+          >
+            {filter.label}
+          </span>
+        </label>
       ))}
     </div>
   )

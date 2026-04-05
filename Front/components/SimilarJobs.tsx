@@ -73,7 +73,7 @@ export function SimilarJobs({ jobSlug }: SimilarJobsProps) {
           const postedTime = formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })
           
           return (
-            <Link key={job.id} href={`/job/${job.slug}`}>
+            <Link key={job.id} href={`/jobs/${job.slug}`}>
               <Card className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer">
                 <div className="flex gap-3">
                   <CompanyLogo

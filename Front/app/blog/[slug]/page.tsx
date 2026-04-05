@@ -1,137 +1,241 @@
 import { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getBlogPostBySlug, getAllBlogPosts } from "@/lib/mockBlog"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Tag } from "@/components/Tag"
+import {
+  getBlogPostBySlug,
+  getAllBlogPosts,
+  getRelatedPosts,
+} from "@/lib/mockBlog"
 import { Footer } from "@/components/Footer"
-import { Clock, User, ArrowLeft } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
+import { BlogCard } from "@/components/BlogCard"
+import { ArrowLeft, ArrowRight, Clock, ChevronRight } from "lucide-react"
+import { ArticleContent } from "./ArticleContent"
 
 type Props = {
   params: { slug: string }
 }
 
 export async function generateStaticParams() {
-  const posts = getAllBlogPosts()
-  return posts.map((post) => ({
-    slug: post.slug,
-  }))
+  return getAllBlogPosts().map((post) => ({ slug: post.slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = getBlogPostBySlug(params.slug)
-  
-  if (!post) {
-    return {
-      title: "Post Not Found - Aipplify Blog",
-    }
-  }
+  if (!post) return { title: "Post Not Found — Aipplify Blog" }
 
   return {
-    title: `${post.title} - Aipplify Blog`,
-    description: post.excerpt,
+    title: post.metaTitle || `${post.title} | Aipplify Blog`,
+    description: post.metaDescription || post.excerpt,
+    alternates: { canonical: `/blog/${post.slug}` },
+    openGraph: {
+      title: post.metaTitle || post.title,
+      description: post.metaDescription || post.excerpt,
+      url: `https://aipplify.com/blog/${post.slug}`,
+      type: "article",
+      images: [{ url: post.image, alt: post.imageAlt || post.title }],
+    },
   }
+}
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
 }
 
 export default function BlogPostPage({ params }: Props) {
   const post = getBlogPostBySlug(params.slug)
+  if (!post) notFound()
 
-  if (!post) {
-    notFound()
+  const related = getRelatedPosts(params.slug, 3)
+
+  const blogPostingSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    image: post.image,
+    datePublished: post.publishedAt,
+    dateModified: post.publishedAt,
+    author: {
+      "@type": "Person",
+      name: post.author.name,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Aipplify",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://aipplify.com/logo.png",
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://aipplify.com/blog/${post.slug}`,
+    },
   }
 
-  const publishedTime = formatDistanceToNow(new Date(post.publishedAt), { addSuffix: true })
+  const faqSchema =
+    post.faq && post.faq.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: post.faq.map((f) => ({
+            "@type": "Question",
+            name: f.q,
+            acceptedAnswer: { "@type": "Answer", text: f.a },
+          })),
+        }
+      : null
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <Link href="/blog">
-          <Button variant="ghost" className="mb-6">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Blog
-          </Button>
-        </Link>
+    <div className="min-h-screen bg-gray-50/50">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }}
+      />
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        />
+      )}
+
+      <div className="max-w-4xl mx-auto px-6 pt-8 pb-16">
+        {/* Breadcrumbs */}
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1.5 text-sm text-gray-400 mb-6"
+        >
+          <Link
+            href="/"
+            className="hover:text-primary transition-colors"
+          >
+            Home
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <Link
+            href="/blog"
+            className="hover:text-primary transition-colors"
+          >
+            Blog
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-gray-600 truncate max-w-[300px]">
+            {post.title}
+          </span>
+        </nav>
 
         <article>
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
-                {post.category}
-              </span>
-              <span className="text-gray-400">•</span>
-              <div className="flex items-center gap-1 text-sm text-gray-500">
-                <Clock className="h-4 w-4" />
-                <span>{post.readTime}</span>
-              </div>
-            </div>
-            <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-            <p className="text-xl text-gray-600 mb-6">{post.excerpt}</p>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center gap-2">
-                <img
-                  src={post.author.avatar}
-                  alt={post.author.name}
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
+          {/* Header */}
+          <header className="mb-8">
+            <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-md mb-4">
+              {post.category}
+            </span>
+            <h1 className="text-3xl md:text-4xl lg:text-[2.75rem] font-extrabold text-gray-900 leading-tight mb-5">
+              {post.title}
+            </h1>
+            <p className="text-lg text-gray-600 leading-relaxed mb-6">
+              {post.excerpt}
+            </p>
+            <div className="flex flex-wrap items-center gap-4 pb-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-bold text-primary">
+                    {post.author.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                  </span>
+                </div>
                 <div>
-                  <p className="font-medium">{post.author.name}</p>
-                  <p className="text-sm text-gray-500">{publishedTime}</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {post.author.name}
+                  </p>
+                  {post.author.role && (
+                    <p className="text-xs text-gray-500">{post.author.role}</p>
+                  )}
                 </div>
               </div>
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <span>{formatDate(post.publishedAt)}</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  {post.readTime}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2 mb-8">
-              {post.tags.map((tag) => (
-                <Tag key={tag}>{tag}</Tag>
-              ))}
-            </div>
-          </div>
+          </header>
 
-          <div className="aspect-video relative mb-8 rounded-lg overflow-hidden">
+          {/* Featured image */}
+          <div className="aspect-video rounded-2xl overflow-hidden mb-10">
             <img
               src={post.image}
-              alt={post.title}
+              alt={post.imageAlt || post.title}
+              width={800}
+              height={400}
               className="w-full h-full object-cover"
             />
           </div>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="prose prose-lg max-w-none">
-                {post.content.split('\n\n').map((paragraph, index) => {
-                  if (paragraph.startsWith('## ')) {
-                    return (
-                      <h2 key={index} className="text-2xl font-bold mt-8 mb-4">
-                        {paragraph.replace('## ', '')}
-                      </h2>
-                    )
-                  }
-                  if (paragraph.startsWith('- ')) {
-                    const items = paragraph.split('\n').filter(item => item.startsWith('- '))
-                    return (
-                      <ul key={index} className="list-disc list-inside space-y-2 my-4">
-                        {items.map((item, i) => (
-                          <li key={i} className="text-gray-700">
-                            {item.replace('- ', '')}
-                          </li>
-                        ))}
-                      </ul>
-                    )
-                  }
-                  return (
-                    <p key={index} className="text-gray-700 mb-4 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Content */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-10 mb-12">
+            <ArticleContent content={post.content} />
+          </div>
+
+          {/* Tags */}
+          <div className="flex flex-wrap gap-2 mb-12">
+            {post.tags.map((tag) => (
+              <span
+                key={tag}
+                className="bg-gray-100 rounded-full px-3 py-1 text-xs text-gray-600 font-medium"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-8 md:p-10 text-center text-white mb-16">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">
+              Ready to Take the Next Step?
+            </h2>
+            <p className="text-white/80 mb-6 max-w-lg mx-auto">
+              Browse AI-scored jobs in crypto, Web3, and artificial intelligence
+              — or post your own listing today.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/jobs"
+                className="inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-white text-indigo-700 font-bold hover:shadow-lg transition-all text-sm"
+              >
+                Browse AI Jobs
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/for-recruiters"
+                className="inline-flex items-center gap-2 px-7 py-3 rounded-xl border-2 border-white/30 text-white font-semibold hover:bg-white/10 transition-all text-sm"
+              >
+                Post a Job
+              </Link>
+            </div>
+          </div>
         </article>
+
+        {/* Related articles */}
+        {related.length > 0 && (
+          <section>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Related Articles
+            </h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {related.map((p) => (
+                <BlogCard key={p.id} post={p} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
+
       <Footer />
     </div>
   )

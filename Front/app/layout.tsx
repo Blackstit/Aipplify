@@ -6,8 +6,13 @@ import { Header } from "@/components/Header"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Aipplify - AI Job Board",
-  description: "Find your dream job with AI-powered matching",
+  title: "AI Job Board for Crypto & Web3 | 1000+ AI-Scored Jobs | Aipplify",
+  description:
+    "Find AI, Crypto & Web3 jobs with AI-powered quality scores. Apply with confidence to 1000+ verified positions from 420+ trusted companies. Remote & onsite.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+  },
 }
 
 export default function RootLayout({

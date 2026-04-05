@@ -1,6 +1,18 @@
 import { prisma } from "@/lib/prisma"
 import type { Job, Company } from "@prisma/client"
 
+const SITE = process.env.NEXT_PUBLIC_BASE_URL || "https://aipplify.com"
+
+export function normalizeLogoUrl(url: string | null | undefined): string | null {
+  if (url == null || String(url).trim() === "") return null
+  const u = String(url).trim()
+  if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:")) return u
+  if (u.startsWith("//")) return `https:${u}`
+  const origin = SITE.replace(/\/$/, "")
+  if (u.startsWith("/")) return `${origin}${u}`
+  return u
+}
+
 // Define a more comprehensive Job type for the frontend
 export interface JobFrontend {
   id: string
@@ -27,6 +39,28 @@ export interface JobFrontend {
   verified: boolean
   recruiterContact?: string | null
   sourceUrl?: string | null
+  salaryMin?: number | null
+  salaryMax?: number | null
+  currency?: string | null
+  aiScore?: number | null
+  scoring?: {
+    total_score: number
+    overall_summary: string
+    red_flags: string[]
+    scoring_results: { criterion: string; key: string; score: number; weight: number; summary: string }[]
+  } | null
+  companyInfo?: {
+    name: string
+    website: string | null
+    logo_url: string | null
+    industry: string | null
+    size: string | null
+    founded: string | null
+    headquarters: string | null
+    summary: string | null
+    socials: Record<string, string> | null
+    domains: string[] | null
+  } | null
 }
 
 // Transform Prisma Job to frontend format
@@ -39,7 +73,7 @@ export function transformJob(job: Job & { company: Company | null }): JobFronten
       id: job.company?.id || "",
       name: job.company?.name || "Unknown Company",
       slug: job.company?.slug || "",
-      logo: job.company?.logoUrl || null,
+      logo: normalizeLogoUrl(job.company?.logoUrl),
       verified: job.company?.verified || false,
     },
     salary: job.salaryText || 
@@ -63,6 +97,9 @@ export function transformJob(job: Job & { company: Company | null }): JobFronten
     verified: job.verified || job.company?.verified || false,
     recruiterContact: job.recruiterContact || null,
     sourceUrl: job.sourceUrl || null,
+    salaryMin: job.salaryMin,
+    salaryMax: job.salaryMax,
+    currency: job.currency != null ? String(job.currency) : null,
   }
 }
 

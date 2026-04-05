@@ -12,24 +12,21 @@ export function middleware(request: NextRequest) {
   const moderatorRoutes = ["/moderator", "/admin"]
   
   const pathname = request.nextUrl.pathname
-  
-  // Check if route is protected
-  const isProtectedRoute = protectedRoutes.some(route => 
-    pathname.startsWith(route)
-  )
-  
-  const isAdminRoute = adminRoutes.some(route => 
-    pathname.startsWith(route)
-  )
-  
-  const isModeratorRoute = moderatorRoutes.some(route => 
-    pathname.startsWith(route)
-  )
-  
-  // For now, we'll handle auth checks in the page components
-  // since we're using localStorage (client-side)
-  // In production, use proper server-side sessions/cookies
-  
+
+  const oldJobMatch = pathname.match(/^\/job\/(\d+)$/)
+  if (oldJobMatch) {
+    const id = oldJobMatch[1]
+    const url = request.nextUrl.clone()
+    url.pathname = `/jobs/job-eco-${id}`
+    return NextResponse.redirect(url, 301)
+  }
+
+  if (pathname === "/jobs" && request.nextUrl.searchParams.get("page") === "1") {
+    const url = request.nextUrl.clone()
+    url.searchParams.delete("page")
+    return NextResponse.redirect(url, 301)
+  }
+
   return NextResponse.next()
 }
 

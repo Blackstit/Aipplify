@@ -16,7 +16,8 @@ export function CompanyLogo({ logo, name, size = 64, className }: CompanyLogoPro
         alt={name}
         width={size}
         height={size}
-        className={cn("rounded-lg", className)}
+        className={cn("rounded-lg object-contain shrink-0", className)}
+        style={{ width: size, height: size }}
       />
     )
   }
@@ -32,10 +33,10 @@ export function CompanyLogo({ logo, name, size = 64, className }: CompanyLogoPro
   return (
     <div
       className={cn(
-        "rounded-lg bg-gradient-primary flex items-center justify-center text-white font-semibold",
+        "rounded-lg bg-gradient-primary flex items-center justify-center text-white font-semibold shrink-0",
         className
       )}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, minWidth: size, minHeight: size }}
     >
       {initials || <Building2 className="h-6 w-6" />}
     </div>

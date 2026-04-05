@@ -73,6 +73,9 @@ export function Header() {
               <Link href="/jobs" className="text-sm font-medium hover:text-primary transition-colors">
                 Jobs
               </Link>
+              <Link href="/companies" className="text-sm font-medium hover:text-primary transition-colors">
+                Companies
+              </Link>
               <Link href="/blog" className="text-sm font-medium hover:text-primary transition-colors">
                 Blog
               </Link>

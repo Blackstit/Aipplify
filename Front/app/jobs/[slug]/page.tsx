@@ -82,19 +82,58 @@ export default async function JobDetailPage({ params }: Props) {
   const scoring = job.scoring
   const aiSummary = scoring?.overall_summary
 
-  const jobPostingSchema = {
+  const isRemote = job.workType === "remote"
+  const locationRaw = (job as any).countryCity || job.companyInfo?.headquarters || null
+  const locationName = locationRaw || (isRemote ? "Remote" : "Worldwide")
+
+  function buildJobLocation() {
+    if (locationRaw) {
+      const parts = locationRaw.split(",").map((s: string) => s.trim())
+      return {
+        "@type": "Place",
+        address: {
+          "@type": "PostalAddress",
+          ...(parts.length >= 3 && { addressLocality: parts[0], addressRegion: parts[1], addressCountry: parts[2] }),
+          ...(parts.length === 2 && { addressLocality: parts[0], addressCountry: parts[1] }),
+          ...(parts.length === 1 && { addressCountry: parts[0] }),
+        },
+      }
+    }
+    return {
+      "@type": "Place",
+      address: { "@type": "PostalAddress", addressCountry: "US" },
+    }
+  }
+
+  function buildApplicantLocationRequirements() {
+    if (!isRemote) return undefined
+    if (locationRaw) {
+      const parts = locationRaw.split(",").map((s: string) => s.trim())
+      const country = parts[parts.length - 1]
+      if (country && country.length <= 3) {
+        return [{ "@type": "Country", name: country }]
+      }
+      return [{ "@type": "Country", name: country }]
+    }
+    return [{ "@type": "Country", name: "US" }, { "@type": "Country", name: "GB" }, { "@type": "Country", name: "DE" }]
+  }
+
+  const jobPostingSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: job.title,
     description: job.description?.slice(0, 5000),
     datePosted: job.postedAt,
+    validThrough: new Date(new Date(job.postedAt).getTime() + 60 * 24 * 60 * 60 * 1000).toISOString(),
     hiringOrganization: {
       "@type": "Organization",
       name: job.company.name,
       ...(job.companyInfo?.logo_url && { logo: job.companyInfo.logo_url }),
       ...(job.companyInfo?.website && { sameAs: job.companyInfo.website }),
     },
-    jobLocationType: job.workType === "remote" ? "TELECOMMUTE" : undefined,
+    jobLocation: buildJobLocation(),
+    ...(isRemote && { jobLocationType: "TELECOMMUTE" }),
+    ...(isRemote && { applicantLocationRequirements: buildApplicantLocationRequirements() }),
     employmentType: "FULL_TIME",
     ...(job.salaryMin != null && job.salaryMax != null && {
       baseSalary: {

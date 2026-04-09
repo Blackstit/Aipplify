@@ -208,5 +208,7 @@ export function vacancyToJobFrontend(item: JobEcoItem) {
     aiScore: item.ai_score_value ?? null,
     scoring: item.scoring ?? null,
     companyInfo: item.company ?? null,
+    countryCity: item.country_city || item.company?.headquarters || null,
+    locationType: item.location_type || null,
   }
 }

@@ -11,7 +11,15 @@ function GAPageTracker() {
 
   useEffect(() => {
     const qs = searchParams.toString()
-    pageview(qs ? `${pathname}?${qs}` : pathname)
+    const url = qs ? `${pathname}?${qs}` : pathname
+    // Send to Google Analytics
+    pageview(url)
+    // Send to our own DB tracker (fire-and-forget)
+    fetch("/api/track/pageview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: pathname }),
+    }).catch(() => {})
   }, [pathname, searchParams])
 
   return null

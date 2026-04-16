@@ -266,6 +266,30 @@ model Application {
   @@index([status])
 }
 
+// ---------- Analytics / Page views ----------
+
+model DailyPageView {
+  id    String @id @default(cuid())
+  path  String
+  day   String // "YYYY-MM-DD"
+  views Int    @default(0)
+
+  @@unique([path, day])
+  @@index([day])
+}
+
+// ---------- Email verification ----------
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
 // ---------- Blog ----------
 
 model BlogPost {

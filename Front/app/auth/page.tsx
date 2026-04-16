@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -9,10 +9,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Footer } from "@/components/Footer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Mail, Lock, User, Building2, Loader2 } from "lucide-react"
+import { Mail, Lock, User, Building2, Loader2, ShieldCheck } from "lucide-react"
+import { trackLogin, trackSignUp } from "@/lib/analytics"
+
+type Step = "auth" | "verify"
 
 export default function AuthPage() {
   const router = useRouter()
+  const [step, setStep] = useState<Step>("auth")
+  const [pendingEmail, setPendingEmail] = useState("")
   const [isLogin, setIsLogin] = useState(true)
   const [activeTab, setActiveTab] = useState<"job-seeker" | "recruiter">("job-seeker")
   const [loading, setLoading] = useState(false)
@@ -28,43 +33,53 @@ export default function AuthPage() {
   const [registerName, setRegisterName] = useState("")
   const [registerCompanyName, setRegisterCompanyName] = useState("")
 
+  // Verification code
+  const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""])
+  const codeRefs = [
+    useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null),
+  ]
+
+  const handleCodeDigit = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return
+    const next = [...codeDigits]
+    next[index] = value.slice(-1)
+    setCodeDigits(next)
+    if (value && index < 5) codeRefs[index + 1].current?.focus()
+  }
+  const handleCodeKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !codeDigits[index] && index > 0) codeRefs[index - 1].current?.focus()
+  }
+  const handleCodePaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
+    if (text.length === 6) { setCodeDigits(text.split("")); codeRefs[5].current?.focus() }
+  }
+
+  const afterAuth = (user: { type: string }) => {
+    localStorage.setItem("user", JSON.stringify(user))
+    window.dispatchEvent(new Event("user-changed"))
+    router.push(user.type === "RECRUITER" ? "/for-recruiters" : "/jobs")
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
-
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: loginEmail,
-          password: loginPassword,
-        }),
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       })
-
       const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || "Login failed")
-        setLoading(false)
-        return
-      }
-
-      // Save user to localStorage (temporary, later use proper session)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      
-      // Dispatch custom event to update Header
-      window.dispatchEvent(new Event("user-changed"))
-      
-      // Redirect based on user type
-      if (data.user.type === "RECRUITER") {
-        router.push("/for-recruiters")
-      } else {
-        router.push("/jobs")
-      }
-    } catch (err) {
+      if (data.requiresVerification) { setPendingEmail(data.email); setStep("verify"); setLoading(false); return }
+      if (!response.ok) { setError(data.error || "Login failed"); setLoading(false); return }
+      trackLogin(data.user?.type ?? "CANDIDATE")
+      afterAuth(data.user)
+    } catch {
       setError("Something went wrong. Please try again.")
+    } finally {
       setLoading(false)
     }
   }
@@ -73,7 +88,6 @@ export default function AuthPage() {
     e.preventDefault()
     setLoading(true)
     setError("")
-
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -86,31 +100,103 @@ export default function AuthPage() {
           companyName: activeTab === "recruiter" ? registerCompanyName : undefined,
         }),
       })
-
       const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || "Registration failed")
-        setLoading(false)
-        return
-      }
-
-      // Auto login after registration
-      localStorage.setItem("user", JSON.stringify(data.user))
-      
-      // Dispatch custom event to update Header
-      window.dispatchEvent(new Event("user-changed"))
-      
-      // Redirect based on user type
-      if (data.user.type === "RECRUITER") {
-        router.push("/for-recruiters")
-      } else {
-        router.push("/jobs")
-      }
-    } catch (err) {
+      if (!response.ok) { setError(data.error || "Registration failed"); setLoading(false); return }
+      if (data.requiresVerification) { setPendingEmail(data.email); setStep("verify"); setLoading(false); return }
+      trackSignUp(activeTab === "recruiter" ? "RECRUITER" : "CANDIDATE")
+      afterAuth(data.user)
+    } catch {
       setError("Something went wrong. Please try again.")
+    } finally {
       setLoading(false)
     }
+  }
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const code = codeDigits.join("")
+    if (code.length < 6) { setError("Please enter the full 6-digit code"); return }
+    setLoading(true)
+    setError("")
+    try {
+      const res = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: pendingEmail, code }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || "Verification failed"); setLoading(false); return }
+      afterAuth(data.user)
+    } catch {
+      setError("Something went wrong. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (step === "verify") {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="flex-1 flex items-center justify-center py-12">
+          <div className="w-full max-w-md">
+            <div className="text-center mb-8">
+              <Link href="/" className="flex items-center justify-center gap-2 mb-4">
+                <div className="h-8 w-8 bg-gradient-primary rounded"></div>
+                <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">Aipplify</span>
+              </Link>
+            </div>
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col items-center text-center space-y-3 pb-2">
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <ShieldCheck className="h-7 w-7 text-primary" />
+                  </div>
+                  <h1 className="text-2xl font-bold">Check your email</h1>
+                  <p className="text-gray-600 text-sm">
+                    We sent a 6-digit code to <span className="font-medium text-foreground">{pendingEmail}</span>
+                  </p>
+                </div>
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm text-center">
+                    {error}
+                  </div>
+                )}
+                <form onSubmit={handleVerify} className="space-y-6 pt-2">
+                  <div className="flex justify-center gap-2" onPaste={handleCodePaste}>
+                    {codeDigits.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={codeRefs[i]}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleCodeDigit(i, e.target.value)}
+                        onKeyDown={(e) => handleCodeKeyDown(i, e)}
+                        className="w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg focus:border-primary focus:outline-none transition-colors bg-background"
+                        style={{ borderColor: digit ? "hsl(var(--primary))" : undefined }}
+                        disabled={loading}
+                        autoFocus={i === 0}
+                      />
+                    ))}
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading || codeDigits.join("").length < 6}>
+                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Verifying...</> : "Verify Email"}
+                  </Button>
+                  <p className="text-center text-sm text-gray-500">
+                    Didn't receive the code?{" "}
+                    <button type="button" onClick={() => { setStep("auth"); setError("") }} className="text-primary hover:underline">
+                      Go back
+                    </button>
+                  </p>
+                </form>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   return (

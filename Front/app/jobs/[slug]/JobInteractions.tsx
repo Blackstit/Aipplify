@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { ApplyButton } from "@/components/ApplyButton"
 import { SaveJobButton } from "@/components/SaveJobButton"
+import { trackJobView } from "@/lib/analytics"
 
 interface Props {
   jobId: string
@@ -19,6 +20,7 @@ interface Props {
 
 export function JobInteractions(props: Props) {
   useEffect(() => {
+    trackJobView(props.jobSlug, props.jobTitle, props.company.name)
     try {
       const viewed = JSON.parse(localStorage.getItem("viewedJobs") || "[]") as string[]
       if (!viewed.includes(props.jobSlug)) {
@@ -28,7 +30,7 @@ export function JobInteractions(props: Props) {
         window.dispatchEvent(new Event("job-viewed"))
       }
     } catch {}
-  }, [props.jobSlug])
+  }, [props.jobSlug, props.jobTitle, props.company.name])
 
   return (
     <div className="space-y-3">

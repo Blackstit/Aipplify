@@ -4,6 +4,9 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Bookmark, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { isAuthenticated } from "@/lib/session"
+import { AuthModal } from "@/components/AuthModal"
+import { trackJobSave, trackJobUnsave } from "@/lib/analytics"
 
 export interface SavedJob {
   id: string
@@ -56,6 +59,7 @@ export function SaveJobButton({
   postedAt = "",
 }: SaveJobButtonProps) {
   const [isSaved, setIsSaved] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   useEffect(() => {
     setIsSaved(getSavedJobs().some((j) => j.id === jobId))
@@ -69,11 +73,12 @@ export function SaveJobButton({
     }
   }, [jobId])
 
-  const handleToggle = () => {
+  const saveJob = () => {
     const saved = getSavedJobs()
     if (isSaved) {
       writeSavedJobs(saved.filter((j) => j.id !== jobId))
       setIsSaved(false)
+      trackJobUnsave(jobSlug, jobTitle)
     } else {
       const entry: SavedJob = {
         id: jobId,
@@ -89,29 +94,46 @@ export function SaveJobButton({
       }
       writeSavedJobs([entry, ...saved])
       setIsSaved(true)
+      trackJobSave(jobSlug, jobTitle)
     }
   }
 
+  const handleToggle = () => {
+    if (!isAuthenticated()) {
+      setShowAuthModal(true)
+      return
+    }
+    saveJob()
+  }
+
   return (
-    <Button
-      variant="outline"
-      className={cn(
-        "w-full transition-colors",
-        isSaved && "border-primary/40 text-primary bg-primary/5",
-      )}
-      onClick={handleToggle}
-    >
-      {isSaved ? (
-        <>
-          <Check className="h-4 w-4 mr-2" />
-          Saved
-        </>
-      ) : (
-        <>
-          <Bookmark className="h-4 w-4 mr-2" />
-          Save Job
-        </>
-      )}
-    </Button>
+    <>
+      <Button
+        variant="outline"
+        className={cn(
+          "w-full transition-colors",
+          isSaved && "border-primary/40 text-primary bg-primary/5",
+        )}
+        onClick={handleToggle}
+      >
+        {isSaved ? (
+          <>
+            <Check className="h-4 w-4 mr-2" />
+            Saved
+          </>
+        ) : (
+          <>
+            <Bookmark className="h-4 w-4 mr-2" />
+            Save Job
+          </>
+        )}
+      </Button>
+
+      <AuthModal
+        open={showAuthModal}
+        onOpenChange={setShowAuthModal}
+        onSuccess={saveJob}
+      />
+    </>
   )
 }

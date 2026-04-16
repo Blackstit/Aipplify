@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ApplyModal } from "./ApplyModal"
+import { AuthModal } from "./AuthModal"
 import { getCurrentUser } from "@/lib/session"
-import { useRouter } from "next/navigation"
+import { trackApplyClick, trackApplySuccess } from "@/lib/analytics"
 
 interface ApplyButtonProps {
   jobId: string
@@ -20,17 +21,14 @@ export function ApplyButton({
   recruiterContact,
 }: ApplyButtonProps) {
   const [open, setOpen] = useState(false)
-  const router = useRouter()
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   const handleOpenModal = () => {
-    const user = getCurrentUser()
-    
-    if (!user) {
-      // Redirect to auth if not logged in
-      router.push(`/auth?redirect=/jobs/${jobSlug}`)
+    trackApplyClick(jobSlug, jobTitle)
+    if (!getCurrentUser()) {
+      setShowAuthModal(true)
       return
     }
-
     setOpen(true)
   }
 
@@ -55,11 +53,11 @@ export function ApplyButton({
 
       if (!response.ok) {
         console.error("Failed to save application:", data.error)
-        // Still allow contact click even if save fails
+      } else {
+        trackApplySuccess(jobSlug, jobTitle)
       }
     } catch (error) {
       console.error("Error saving application:", error)
-      // Still allow contact click even if save fails
     }
   }
 
@@ -75,6 +73,11 @@ export function ApplyButton({
         jobSlug={jobSlug}
         recruiterContact={recruiterContact}
         onApply={handleApply}
+      />
+      <AuthModal
+        open={showAuthModal}
+        onOpenChange={setShowAuthModal}
+        onSuccess={() => setOpen(true)}
       />
     </>
   )

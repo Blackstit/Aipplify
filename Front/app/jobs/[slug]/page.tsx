@@ -8,6 +8,8 @@ import { Tag } from "@/components/Tag"
 import { SimilarJobs } from "@/components/SimilarJobs"
 import { JobDescription } from "@/components/JobDescription"
 import { JobInteractions } from "./JobInteractions"
+import { JobDetailLiveMetrics } from "@/components/JobDetailLiveMetrics"
+import { getSiteSettings } from "@/lib/site-settings"
 import {
   MapPin, Clock, Briefcase, DollarSign,
   Globe, Award, ChevronRight, Star, AlertTriangle,
@@ -70,6 +72,7 @@ function ScoreBar({ label, score, summary }: { label: string; score: number; sum
 
 export default async function JobDetailPage({ params }: Props) {
   const result = await getJob(params.slug)
+  const site = await getSiteSettings()
 
   if (!result) notFound()
 
@@ -206,6 +209,12 @@ export default async function JobDetailPage({ params }: Props) {
                       <Tag key={tag}>{tag}</Tag>
                     ))}
                   </div>
+                  <JobDetailLiveMetrics
+                    slug={params.slug}
+                    initialViews={job.viewCount ?? 0}
+                    allowPublicCounts={site.showPublicJobViewCounts}
+                    allowPublicWatching={site.showPublicWatchingCount}
+                  />
                 </div>
               </div>
             </div>

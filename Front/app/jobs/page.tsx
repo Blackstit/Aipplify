@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { fetchVacancies, vacancyToJobFrontend } from "@/lib/job-eco-api"
+import { getJobsWithFilters } from "@/lib/jobs"
 import { JobsPageClient } from "./JobsPageClient"
 
 export const dynamic = "force-dynamic"
@@ -42,29 +42,21 @@ export default async function JobsPage({ searchParams }: Props) {
   const search = str(searchParams.search)
   const sort = str(searchParams.sort) || "date_desc"
 
-  let jobs: ReturnType<typeof vacancyToJobFrontend>[] = []
+  let jobs: Awaited<ReturnType<typeof getJobsWithFilters>>["jobs"] = []
   let total = 0
   let totalPages = 1
 
   try {
-    const params = new URLSearchParams()
-    params.set("page", String(page))
-    params.set("per_page", String(PER_PAGE))
-    params.set("sort", sort)
-    if (search) params.set("search", search)
-
-    const data = await fetchVacancies(params)
-    jobs = (data.items || []).map(vacancyToJobFrontend)
-    total = data.total || 0
-    totalPages = Math.ceil(total / PER_PAGE)
+    const data = await getJobsWithFilters({ page, limit: PER_PAGE, search, sort })
+    jobs = data.jobs
+    total = data.total
+    totalPages = data.totalPages
   } catch (e) {
-    console.error("Jobs page SSR fetch error:", e)
+    console.error("Jobs page SSR error:", e)
   }
 
-  const prevHref =
-    page > 1 ? (page === 2 ? "/jobs" : `/jobs?page=${page - 1}`) : null
-  const nextHref =
-    page < totalPages ? `/jobs?page=${page + 1}` : null
+  const prevHref = page > 1 ? (page === 2 ? "/jobs" : `/jobs?page=${page - 1}`) : null
+  const nextHref = page < totalPages ? `/jobs?page=${page + 1}` : null
 
   return (
     <>

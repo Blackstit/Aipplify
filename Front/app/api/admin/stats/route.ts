@@ -21,6 +21,7 @@ export async function GET(request: Request) {
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const thirtyAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const sixtyAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
   const thirtyAgoStr = thirtyAgo.toISOString().slice(0, 10)
   const weekAgoStr = weekAgo.toISOString().slice(0, 10)
 
@@ -75,7 +76,6 @@ export async function GET(request: Request) {
     totalJobs, publishedJobs, draftJobs, archivedJobs,
     jobsTodayNew, jobsWeekNew, jobsMonthNew,
     remoteJobs, hybridJobs, officeJobs,
-    jobsBySource, jobsByExperience,
   ] = await prisma.$transaction([
     prisma.job.count(),
     prisma.job.count({ where: { status: "PUBLISHED" } }),
@@ -87,81 +87,57 @@ export async function GET(request: Request) {
     prisma.job.count({ where: { workType: "REMOTE" } }),
     prisma.job.count({ where: { workType: "HYBRID" } }),
     prisma.job.count({ where: { workType: "OFFICE" } }),
-    prisma.job.groupBy({ by: ["source"], _count: true, orderBy: { source: "asc" } }),
-    prisma.job.groupBy({ by: ["experience"], _count: true, orderBy: { experience: "asc" } }),
   ])
 
-  // Jobs daily additions (30 days)
-  const jobsLast30 = await prisma.job.findMany({
-    where: { createdAt: { gte: thirtyAgo } },
-    select: { createdAt: true },
+  // Jobs daily chart — by postedAt (the real publication date from the job-eco API).
+  // Fixed 60-day window ending today; future-dated rows are clamped out via `lte: now`.
+  const jobsLast60 = await prisma.job.findMany({
+    where: { postedAt: { gte: sixtyAgo, lte: now } },
+    select: { postedAt: true },
   })
-  const jobDailyMap = buildDailyMap(30, now)
-  for (const j of jobsLast30) {
-    const key = j.createdAt.toISOString().slice(0, 10)
+  const jobDailyMap = buildDailyMap(60, now)
+  for (const j of jobsLast60) {
+    if (!j.postedAt) continue
+    const key = j.postedAt.toISOString().slice(0, 10)
     if (key in jobDailyMap) jobDailyMap[key]++
   }
   const jobDailyNew = Object.entries(jobDailyMap).map(([date, count]) => ({ date, count }))
 
-  // Top companies by job count
-  const topCompaniesRaw = await prisma.job.groupBy({
-    by: ["companyId"],
-    _count: { _all: true },
-    orderBy: { _count: { companyId: "desc" } },
-    take: 8,
-    where: { companyId: { not: null } },
+  // Meta for the header
+  const latestPostedRow = await prisma.job.findFirst({
+    where: { postedAt: { not: null } },
+    orderBy: { postedAt: "desc" },
+    select: { postedAt: true },
   })
-  const topCompanyIds = topCompaniesRaw.map((r) => r.companyId).filter(Boolean) as string[]
-  const topCompanyNames = await prisma.company.findMany({
-    where: { id: { in: topCompanyIds } },
-    select: { id: true, name: true },
-  })
-  const nameById: Record<string, string> = {}
-  for (const c of topCompanyNames) nameById[c.id] = c.name
-  const topCompanies = topCompaniesRaw.map((r) => ({
-    name: r.companyId ? (nameById[r.companyId] ?? r.companyId) : "Unknown",
-    count: r._count._all,
-  }))
-
-  const sourceMap: Record<string, number> = {}
-  for (const r of jobsBySource) {
-    const cnt = r._count
-    sourceMap[r.source] = typeof cnt === "object" && cnt ? (cnt._all ?? 0) : 0
-  }
-  const expMap: Record<string, number> = {}
-  for (const r of jobsByExperience) {
-    const cnt = r._count
-    expMap[r.experience] = typeof cnt === "object" && cnt ? (cnt._all ?? 0) : 0
-  }
+  const latestPostedRaw = latestPostedRow?.postedAt ?? null
 
   // ── Visitors ───────────────────────────────────────────────────────────────
-  const [viewsToday, viewsWeek, viewsMonth] = await prisma.$transaction([
-    prisma.dailyPageView.aggregate({
-      _sum: { views: true },
-      where: { day: todayStr },
-    }),
-    prisma.dailyPageView.aggregate({
-      _sum: { views: true },
-      where: { day: { gte: weekAgoStr } },
-    }),
-    prisma.dailyPageView.aggregate({
-      _sum: { views: true },
-      where: { day: { gte: monthStart.toISOString().slice(0, 10) } },
-    }),
+  const [
+    visitorsTodayNew, visitorsWeekNew, visitorsMonthNew, totalVisitors,
+    viewsToday, viewsWeek, viewsMonth,
+  ] = await prisma.$transaction([
+    prisma.visitor.count({ where: { firstSeen: { gte: todayStart } } }),
+    prisma.visitor.count({ where: { firstSeen: { gte: weekAgo } } }),
+    prisma.visitor.count({ where: { firstSeen: { gte: monthStart } } }),
+    prisma.visitor.count(),
+    prisma.dailyPageView.aggregate({ _sum: { views: true }, where: { day: todayStr } }),
+    prisma.dailyPageView.aggregate({ _sum: { views: true }, where: { day: { gte: weekAgoStr } } }),
+    prisma.dailyPageView.aggregate({ _sum: { views: true }, where: { day: { gte: monthStart.toISOString().slice(0, 10) } } }),
   ])
 
-  // 30-day page views chart
-  const pvLast30 = await prisma.dailyPageView.findMany({
-    where: { day: { gte: thirtyAgoStr } },
-    select: { day: true, views: true },
+  // New visitors per day (30 days) — this is the chart the admin actually wants.
+  const newVisitors30 = await prisma.visitor.findMany({
+    where: { firstSeen: { gte: thirtyAgo } },
+    select: { firstSeen: true },
   })
-  const pvDailyMap = buildDailyMap(30, now)
-  for (const pv of pvLast30) {
-    if (pv.day in pvDailyMap) pvDailyMap[pv.day] += pv.views
+  const newVisMap = buildDailyMap(30, now)
+  for (const v of newVisitors30) {
+    const key = v.firstSeen.toISOString().slice(0, 10)
+    if (key in newVisMap) newVisMap[key]++
   }
-  const dailyViews = Object.entries(pvDailyMap).map(([day, views]) => ({ day, views }))
+  const dailyNewVisitors = Object.entries(newVisMap).map(([day, count]) => ({ day, count }))
 
-  // Top pages (last 30 days)
+  // Top pages (last 30 days, by view count)
   const topPagesRaw = await prisma.dailyPageView.groupBy({
     by: ["path"],
     _sum: { views: true },
@@ -174,12 +150,24 @@ export async function GET(request: Request) {
     views: r._sum.views ?? 0,
   }))
 
-  // 7-day unique days visited (simple activity indicator)
-  const activeDays7 = await prisma.dailyPageView.groupBy({
-    by: ["day"],
-    where: { day: { gte: weekAgoStr } },
-    _sum: { views: true },
+  // ── Applications funnel (conversions) ─────────────────────────────────────
+  const [applicationsToday, applicationsWeek, applicationsMonth, jobViewSum] = await Promise.all([
+    prisma.application.count({ where: { createdAt: { gte: todayStart } } }),
+    prisma.application.count({ where: { createdAt: { gte: weekAgo } } }),
+    prisma.application.count({ where: { createdAt: { gte: monthStart } } }),
+    prisma.job.aggregate({ _sum: { viewCount: true } }),
+  ])
+
+  const applicationsLast30 = await prisma.application.findMany({
+    where: { createdAt: { gte: thirtyAgo } },
+    select: { createdAt: true },
   })
+  const appDailyMap = buildDailyMap(30, now)
+  for (const a of applicationsLast30) {
+    const key = a.createdAt.toISOString().slice(0, 10)
+    if (key in appDailyMap) appDailyMap[key]++
+  }
+  const dailyApplications = Object.entries(appDailyMap).map(([date, count]) => ({ date, count }))
 
   // ── Response ───────────────────────────────────────────────────────────────
   return NextResponse.json({
@@ -208,19 +196,27 @@ export async function GET(request: Request) {
       weekNew: jobsWeekNew,
       monthNew: jobsMonthNew,
       byWorkType: { REMOTE: remoteJobs, HYBRID: hybridJobs, OFFICE: officeJobs },
-      bySource: sourceMap,
-      byExperience: expMap,
       dailyNew: jobDailyNew,
-      topCompanies,
+      latestPostedAt: latestPostedRaw ?? null,
+      totalJobViews: jobViewSum._sum.viewCount ?? 0,
     },
-    applications: { total: totalApplications },
+    applications: {
+      total: totalApplications,
+      todayNew: applicationsToday,
+      weekNew: applicationsWeek,
+      monthNew: applicationsMonth,
+      dailyApplications,
+    },
     visitors: {
+      totalEver: totalVisitors,
+      todayNew: visitorsTodayNew,
+      weekNew: visitorsWeekNew,
+      monthNew: visitorsMonthNew,
       todayViews: viewsToday._sum.views ?? 0,
       weekViews: viewsWeek._sum.views ?? 0,
       monthViews: viewsMonth._sum.views ?? 0,
-      dailyViews,
+      dailyNewVisitors,
       topPages,
-      activeDays7: activeDays7.map((d) => ({ day: d.day, views: d._sum.views ?? 0 })),
     },
   })
 }

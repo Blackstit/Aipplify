@@ -184,6 +184,15 @@ model Company {
 
   verified    Boolean  @default(false)
 
+  // Enriched data from job-eco / other sources
+  industry     String?
+  size         String?
+  founded      String?
+  headquarters String?
+  summary      String?
+  socials      Json?
+  domains      String[] @default([])
+
   ownerUserId String?
   ownerUser   User?    @relation("CompanyOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
 
@@ -194,6 +203,7 @@ model Company {
 
   @@index([ownerUserId])
   @@index([verified])
+  @@index([name])
 }
 
 model Job {
@@ -201,8 +211,12 @@ model Job {
   slug          String          @unique
 
   title         String
-  description   String
-  requirements  String?
+  description   String          @db.Text
+  summary       String?         @db.Text
+  requirements  String?         @db.Text
+  responsibilities String?      @db.Text
+  conditions    String?         @db.Text
+  rawText       String?         @db.Text
 
   // Salary: keep flexible; later can normalize better
   salaryText    String?
@@ -215,17 +229,43 @@ model Job {
   experience    ExperienceLevel @default(MID)
 
   tags          String[]        @default([])
+  skills        String[]        @default([])
+  stack         String[]        @default([])
+  domains       String[]        @default([])
 
+  // Flags managed by admin/HR
   featured      Boolean         @default(false)
   verified      Boolean         @default(false)
 
+  // Raw/external fields (mirror of job-eco payload)
+  role             String?
+  seniorityRaw     String?
+  employmentType   String?
+  englishLevel     String?
+  experienceYears  Int?
+  countryCity      String?
+  locationType     String?
+  sourceChannel    String?
+  recruiter        String?
+  riskLabel        String?
+  aiScore          Float?
+  scoring          Json?
+  contacts         Json?
+
   source        JobSource       @default(PARSED)
   sourceUrl     String?
+  externalId    Int?            // id in source system (e.g. job-eco vacancy id)
   recruiterContact String?      // Telegram username, email, or phone
 
   status        JobStatus       @default(PUBLISHED)
 
   postedAt      DateTime?       // external publish date if parsed
+  lastSeenAt    DateTime?       // last time we confirmed this job is still listed upstream
+
+  // Engagement (denormalized applyCount updated on new Application; viewCount on unique daily views)
+  viewCount     Int             @default(0)
+  applyCount    Int             @default(0)
+
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -236,7 +276,11 @@ model Job {
   createdByUser   User?         @relation("JobCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   applications  Application[]
+  presences     JobPresence[]
+  uniqueDailyViews   JobUniqueDailyView[]
+  uniqueDailyApplies JobApplyClick[]
 
+  @@unique([source, externalId])
   @@index([companyId])
   @@index([status])
   @@index([source])
@@ -244,6 +288,10 @@ model Job {
   @@index([verified])
   @@index([workType])
   @@index([experience])
+  @@index([postedAt])
+  @@index([lastSeenAt])
+  @@index([aiScore])
+  @@index([externalId])
 }
 
 model Application {
@@ -264,6 +312,58 @@ model Application {
   @@index([jobId])
   @@index([userId])
   @@index([status])
+  @@index([createdAt])
+}
+
+// ---------- Site-wide toggles (singleton row id = "default") ----------
+model SiteSettings {
+  id String @id @default("default")
+
+  /** When false, public job cards & job page hide view / apply counters (admins still see all). */
+  showPublicJobViewCounts Boolean @default(true)
+  /** When false, hide “watching now” on the job page for visitors. */
+  showPublicWatchingCount Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+}
+
+// ---------- Job page: unique view per visitor per calendar day ----------
+model JobUniqueDailyView {
+  jobId     String
+  day       String // "YYYY-MM-DD" UTC
+  viewerKey String
+
+  createdAt DateTime @default(now())
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, day, viewerKey])
+  @@index([jobId])
+}
+
+// ---------- Job page: unique apply-button click per visitor per calendar day ----------
+model JobApplyClick {
+  jobId     String
+  day       String // "YYYY-MM-DD" UTC
+  viewerKey String
+
+  createdAt DateTime @default(now())
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, day, viewerKey])
+  @@index([jobId])
+}
+
+// ---------- Job page: who is on the vacancy right now (heartbeat) ----------
+model JobPresence {
+  id         String   @id @default(cuid())
+  jobId      String
+  viewerKey  String
+  lastPingAt DateTime @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, viewerKey])
+  @@index([jobId, lastPingAt])
 }
 
 // ---------- Analytics / Page views ----------
@@ -276,6 +376,41 @@ model DailyPageView {
 
   @@unique([path, day])
   @@index([day])
+}
+
+// Unique anonymous visitor (identified by a cookie that we set on first page view).
+// firstSeen is the signal we use for "new visitors" charts.
+model Visitor {
+  id            String   @id // cuid we put into the cookie
+  firstSeen     DateTime @default(now())
+  lastSeen      DateTime @default(now())
+  pageViews     Int      @default(0)
+  firstPath     String?  // first page they landed on
+  firstReferrer String?  // where they came from (document.referrer on first visit)
+  userAgent     String?
+  ip            String?  // last known IP (kept for admin-only activity view)
+  country       String?  // ISO-2 country code from edge/CDN headers, when available
+  userId        String?  // set when an authenticated user is detected (not FK — keeps this lean)
+
+  views         PageView[]
+
+  @@index([firstSeen])
+  @@index([lastSeen])
+  @@index([userId])
+}
+
+// Individual page view event — lets us show exactly what a visitor looked at & when.
+model PageView {
+  id        String   @id @default(cuid())
+  visitorId String
+  visitor   Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  path      String
+  referrer  String?
+  createdAt DateTime @default(now())
+
+  @@index([visitorId])
+  @@index([createdAt])
+  @@index([path])
 }
 
 // ---------- Email verification ----------

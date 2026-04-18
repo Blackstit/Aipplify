@@ -263,14 +263,25 @@ export function JobsPageClient({
             />
             <JobsToolbar
               totalJobs={total}
+              sortBy={sortBy}
               onSortChange={handleSortChange}
               onHideViewedChange={setHideViewed}
               onRefresh={handleRefresh}
               lastUpdated={lastUpdated}
             />
 
-            <div className="jobs-list-container space-y-4">
-              {loading ? (
+            <div className="jobs-list-container space-y-4 relative min-h-[200px]">
+              {loading && jobs.length > 0 && (
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center pt-2"
+                  aria-hidden
+                >
+                  <div className="h-1 w-48 max-w-[90%] rounded-full bg-gray-200 overflow-hidden shadow-sm">
+                    <div className="h-full w-2/5 bg-primary animate-pulse rounded-full" />
+                  </div>
+                </div>
+              )}
+              {loading && jobs.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3" />
                   <p className="text-gray-500">Loading jobs...</p>
@@ -293,7 +304,7 @@ export function JobsPageClient({
               )}
             </div>
 
-            {totalPages > 1 && !loading && (
+            {totalPages > 1 && (
               <Pagination
                 currentPage={page}
                 totalPages={totalPages}

@@ -210,5 +210,7 @@ export function vacancyToJobFrontend(item: JobEcoItem) {
     companyInfo: item.company ?? null,
     countryCity: item.country_city || item.company?.headquarters || null,
     locationType: item.location_type || null,
+    viewCount: 0,
+    applyCount: 0,
   }
 }

@@ -32,6 +32,36 @@ export function JobInteractions(props: Props) {
     } catch {}
   }, [props.jobSlug, props.jobTitle, props.company.name])
 
+  // Unique daily view + presence heartbeat (used for “watching now” and view totals).
+  useEffect(() => {
+    let sid = ""
+    try {
+      sid = sessionStorage.getItem("aipplify_viewer_key") || ""
+      if (!sid) {
+        sid = crypto.randomUUID()
+        sessionStorage.setItem("aipplify_viewer_key", sid)
+      }
+    } catch {
+      return
+    }
+    const headers: HeadersInit = { "x-viewer-key": sid }
+    const slug = encodeURIComponent(props.jobSlug)
+    fetch(`/api/jobs/${slug}/view`, { method: "POST", credentials: "include", headers }).catch(() => {})
+    const ping = () => {
+      fetch(`/api/jobs/${slug}/presence`, { method: "POST", credentials: "include", headers }).catch(() => {})
+    }
+    ping()
+    const interval = setInterval(ping, 25_000)
+    const onVis = () => {
+      if (document.visibilityState === "visible") ping()
+    }
+    document.addEventListener("visibilitychange", onVis)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener("visibilitychange", onVis)
+    }
+  }, [props.jobSlug])
+
   return (
     <div className="space-y-3">
       <ApplyButton

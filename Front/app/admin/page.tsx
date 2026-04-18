@@ -4,9 +4,9 @@ import { useEffect, useState } from "react"
 import { getCurrentUser } from "@/lib/session"
 import Link from "next/link"
 import {
-  Users, UserCheck, UserX, TrendingUp, Briefcase, FileText,
-  Crown, Activity, Calendar, Eye, Globe, BarChart2,
-  Layers, Zap, Building, ArrowRight,
+  Users, TrendingUp, Briefcase, FileText,
+  Activity, Calendar, Eye, Globe,
+  Zap, ArrowRight, UserPlus, Send,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -28,17 +28,23 @@ interface Stats {
     total: number; published: number; draft: number; archived: number
     todayNew: number; weekNew: number; monthNew: number
     byWorkType: { REMOTE: number; HYBRID: number; OFFICE: number }
-    bySource: Record<string, number>
-    byExperience: Record<string, number>
     dailyNew: Array<{ date: string; count: number }>
-    topCompanies: Array<{ name: string; count: number }>
+    latestPostedAt: string | null
+    totalJobViews: number
   }
-  applications: { total: number }
+  applications: {
+    total: number
+    todayNew: number
+    weekNew: number
+    monthNew: number
+    dailyApplications: Array<{ date: string; count: number }>
+  }
   visitors: {
+    totalEver: number
+    todayNew: number; weekNew: number; monthNew: number
     todayViews: number; weekViews: number; monthViews: number
-    dailyViews: Array<{ day: string; views: number }>
+    dailyNewVisitors: Array<{ day: string; count: number }>
     topPages: Array<{ path: string; views: number }>
-    activeDays7: Array<{ day: string; views: number }>
   }
 }
 
@@ -64,36 +70,107 @@ function StatCard({
   return href ? <Link href={href}>{inner}</Link> : inner
 }
 
+function fmtDate(dateStr: string) {
+  return new Date(dateStr + "T12:00:00").toLocaleDateString("en", { day: "numeric", month: "short" })
+}
+
+/**
+ * MiniBarChart — compact time-series chart with a proper axis.
+ *
+ * Notes on the fix for clipped labels: we absolutely position tick labels under the
+ * chart in a dedicated label strip, centered on their bar via `transform: translateX(-50%)`.
+ * That way labels can "bleed" into their neighbors' space and no longer get clipped
+ * by the 1/60th-of-width cells the old implementation used.
+ */
 function MiniBarChart({
-  data, valueKey, labelKey, color = "bg-primary/70",
+  data, valueKey, labelKey, color = "bg-primary/70", targetTicks = 6,
 }: {
   data: Array<Record<string, unknown>>
-  valueKey: string; labelKey: string; color?: string
+  valueKey: string; labelKey: string; color?: string; targetTicks?: number
 }) {
   const max = Math.max(...data.map((d) => Number(d[valueKey]) || 0), 1)
+  const total = data.length
+  if (total === 0) {
+    return <p className="text-xs text-gray-400 py-10 text-center">No data yet</p>
+  }
+
+  // Pick evenly-spaced tick indexes (first, last, and a few in between).
+  const ticksCount = Math.min(targetTicks, total)
+  const tickIdxs = new Set<number>()
+  if (ticksCount <= 1) {
+    tickIdxs.add(0)
+  } else {
+    for (let i = 0; i < ticksCount; i++) {
+      tickIdxs.add(Math.round((i * (total - 1)) / (ticksCount - 1)))
+    }
+  }
+
+  const chartHeight = 96
+
   return (
-    <div className="flex items-end gap-1 h-20 w-full">
-      {data.map((d, i) => {
-        const val = Number(d[valueKey]) || 0
-        const label = String(d[labelKey] || "")
-        const shortLabel = label.length === 10
-          ? new Date(label).toLocaleDateString("en", { weekday: "short" })
-          : label.slice(-3)
-        return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group relative">
-            {val > 0 && (
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity bg-white px-1 rounded shadow border border-gray-100 z-10 whitespace-nowrap">
-                {val}
-              </span>
-            )}
+    <div className="w-full select-none">
+      {/* ── Bar area ── */}
+      <div className="relative flex items-end gap-px w-full" style={{ height: chartHeight }}>
+        {data.map((d, i) => {
+          const val = Number(d[valueKey]) || 0
+          const rawLabel = String(d[labelKey] || "")
+          const dateLabel = rawLabel.length === 10 ? fmtDate(rawLabel) : rawLabel
+          const barH = val > 0 ? Math.max(3, Math.round((val / max) * (chartHeight - 4))) : 1
+
+          return (
             <div
-              className={cn("w-full rounded-t-sm transition-all", color, val === 0 && "opacity-30")}
-              style={{ height: `${Math.max(3, (val / max) * 72)}px` }}
-            />
-            <span className="text-[9px] text-gray-400">{shortLabel}</span>
-          </div>
-        )
-      })}
+              key={i}
+              className="flex-1 relative group flex items-end"
+              style={{ height: "100%" }}
+            >
+              {val > 0 && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center z-30 pointer-events-none">
+                  <div className="bg-gray-900 text-white text-[10px] font-semibold px-2 py-1 rounded whitespace-nowrap leading-none">
+                    <span className="text-sm">{val}</span>
+                    <span className="text-gray-400 ml-1">{dateLabel}</span>
+                  </div>
+                  <div className="w-1.5 h-1.5 bg-gray-900 rotate-45 -mt-0.5" />
+                </div>
+              )}
+              <div
+                className={cn("w-full rounded-t-sm", color, val === 0 ? "opacity-15" : "opacity-90")}
+                style={{ height: barH }}
+              />
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── Baseline ── */}
+      <div className="h-px bg-gray-200 w-full mt-1" />
+
+      {/* ── Label row: absolute-positioned ticks so labels never get clipped ── */}
+      <div className="relative w-full mt-1.5" style={{ height: 16 }}>
+        {data.map((d, i) => {
+          if (!tickIdxs.has(i)) return null
+          const rawLabel = String(d[labelKey] || "")
+          const dateLabel = rawLabel.length === 10 ? fmtDate(rawLabel) : rawLabel
+          // Center the tick label on the middle of its bar.
+          const leftPct = ((i + 0.5) / total) * 100
+          return (
+            <span
+              key={i}
+              className="absolute top-0 text-[10px] text-gray-500 whitespace-nowrap leading-none"
+              style={{
+                left: `${leftPct}%`,
+                transform:
+                  i === 0
+                    ? "translateX(0)"
+                    : i === total - 1
+                    ? "translateX(-100%)"
+                    : "translateX(-50%)",
+              }}
+            >
+              {dateLabel}
+            </span>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -185,27 +262,32 @@ export default function AdminDashboard() {
 
       {/* ── Visitors ──────────────────────────────────────────────────────── */}
       <section>
-        <SectionHeader icon={Eye} title="Visitors" sub="Page views tracked by built-in analytics" />
+        <SectionHeader
+          icon={Eye}
+          title="Visitors"
+          sub={`${visitors.totalEver.toLocaleString()} unique ever · tracked via first-party cookie`}
+        />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-          <StatCard label="Today's views" value={visitors.todayViews} icon={Eye} colorClass="bg-sky-100 text-sky-600" />
-          <StatCard label="This week" value={visitors.weekViews} icon={TrendingUp} colorClass="bg-indigo-100 text-indigo-600" />
-          <StatCard label="This month" value={visitors.monthViews} icon={Activity} colorClass="bg-violet-100 text-violet-600" />
-          <StatCard label="Applications" value={applications.total} icon={FileText} colorClass="bg-teal-100 text-teal-600" />
+          <StatCard label="New today" value={visitors.todayNew} icon={UserPlus} colorClass="bg-sky-100 text-sky-600" sub={`${visitors.todayViews.toLocaleString()} views`} />
+          <StatCard label="New this week" value={visitors.weekNew} icon={TrendingUp} colorClass="bg-indigo-100 text-indigo-600" sub={`${visitors.weekViews.toLocaleString()} views`} />
+          <StatCard label="New this month" value={visitors.monthNew} icon={Activity} colorClass="bg-violet-100 text-violet-600" sub={`${visitors.monthViews.toLocaleString()} views`} />
+          <StatCard label="Applies this week" value={applications.weekNew} icon={Send} colorClass="bg-teal-100 text-teal-600" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* 30-day chart */}
+          {/* New-visitors chart */}
           <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5">
-            <p className="text-sm font-semibold mb-4 text-gray-700">Page views — last 30 days</p>
-            <MiniBarChart data={visitors.dailyViews} valueKey="views" labelKey="day" color="bg-sky-500/70" />
+            <p className="text-sm font-semibold mb-1 text-gray-700">New visitors — last 30 days</p>
+            <p className="text-xs text-gray-400 mb-4">Count of first-time visits per day</p>
+            <MiniBarChart data={visitors.dailyNewVisitors} valueKey="count" labelKey="day" color="bg-sky-500/70" targetTicks={6} />
           </div>
 
           {/* Top pages */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <p className="text-sm font-semibold mb-3 text-gray-700">Top pages (30 days)</p>
             {visitors.topPages.length === 0 ? (
-              <p className="text-xs text-gray-400 py-4 text-center">No data yet — will appear after first visits</p>
+              <p className="text-xs text-gray-400 py-4 text-center">No data yet</p>
             ) : (
               <div className="space-y-2">
                 {visitors.topPages.slice(0, 8).map(({ path, views }) => (
@@ -218,6 +300,33 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+        </div>
+
+      </section>
+
+      {/* ── Applications & job views (conversions) ─────────────────────────── */}
+      <section>
+        <SectionHeader
+          icon={Send}
+          title="Applications & job engagement"
+          sub="Apply clicks recorded on Aipplify · job page views (unique visitor per day)"
+        />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <StatCard label="Applies (total)" value={applications.total} icon={FileText} colorClass="bg-teal-100 text-teal-600" />
+          <StatCard label="Applies today" value={applications.todayNew} icon={Zap} colorClass="bg-emerald-100 text-emerald-600" />
+          <StatCard label="Applies this week" value={applications.weekNew} icon={TrendingUp} colorClass="bg-cyan-100 text-cyan-600" />
+          <StatCard label="Job page views (sum)" value={jobs.totalJobViews} icon={Eye} colorClass="bg-indigo-100 text-indigo-600" />
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <p className="text-sm font-semibold mb-1 text-gray-700">Applications — last 30 days</p>
+          <p className="text-xs text-gray-400 mb-4">New Application rows per day (after user confirms apply flow)</p>
+          <MiniBarChart
+            data={applications.dailyApplications}
+            valueKey="count"
+            labelKey="date"
+            color="bg-teal-500/70"
+            targetTicks={6}
+          />
         </div>
       </section>
 
@@ -236,7 +345,7 @@ export default function AdminDashboard() {
           {/* Chart */}
           <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5">
             <p className="text-sm font-semibold mb-4 text-gray-700">Registrations — last 30 days</p>
-            <MiniBarChart data={users.dailySignups} valueKey="count" labelKey="date" color="bg-blue-500/70" />
+            <MiniBarChart data={users.dailySignups} valueKey="count" labelKey="date" color="bg-blue-500/70" targetTicks={6} />
           </div>
 
           {/* Breakdown */}
@@ -324,8 +433,23 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Chart */}
           <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5">
-            <p className="text-sm font-semibold mb-4 text-gray-700">New jobs — last 30 days</p>
-            <MiniBarChart data={jobs.dailyNew} valueKey="count" labelKey="date" color="bg-amber-400/80" />
+            <div className="flex items-start justify-between mb-4 gap-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-700">Jobs by publication date — last 60 days</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Counted by <code className="bg-gray-100 px-1 rounded">postedAt</code> from the job-eco API
+                </p>
+              </div>
+              {jobs.latestPostedAt && (
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Newest job</p>
+                  <p className="text-xs font-semibold text-gray-700">
+                    {formatDistanceToNow(new Date(jobs.latestPostedAt), { addSuffix: true })}
+                  </p>
+                </div>
+              )}
+            </div>
+            <MiniBarChart data={jobs.dailyNew} valueKey="count" labelKey="date" color="bg-amber-400/80" targetTicks={7} />
           </div>
 
           {/* Status breakdown */}
@@ -352,71 +476,6 @@ export default function AdminDashboard() {
                   { label: "Office", count: jobs.byWorkType.OFFICE, color: "bg-gray-400" },
                 ]}
               />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-          {/* Source breakdown */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <p className="text-sm font-semibold mb-3 text-gray-700">By source</p>
-            <div className="space-y-2">
-              {Object.entries(jobs.bySource)
-                .sort(([, a], [, b]) => b - a)
-                .map(([source, count]) => (
-                  <div key={source} className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 w-32 shrink-0">{source}</span>
-                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full bg-amber-400 rounded-full"
-                        style={{ width: `${jobs.total ? (count / jobs.total) * 100 : 0}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-semibold text-gray-700 w-12 text-right shrink-0">
-                      {count.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-
-          {/* Experience breakdown */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <p className="text-sm font-semibold mb-3 text-gray-700">By experience level</p>
-            <div className="space-y-2">
-              {(["INTERN", "JUNIOR", "MID", "SENIOR", "LEAD"] as const).map((exp) => {
-                const count = jobs.byExperience[exp] ?? 0
-                return (
-                  <div key={exp} className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 w-16 shrink-0">{exp}</span>
-                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full bg-indigo-400 rounded-full"
-                        style={{ width: `${jobs.total ? (count / jobs.total) * 100 : 0}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-semibold text-gray-700 w-12 text-right shrink-0">
-                      {count.toLocaleString()}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Top companies */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 lg:col-span-2">
-            <p className="text-sm font-semibold mb-3 text-gray-700 flex items-center gap-2">
-              <Building className="h-4 w-4 text-gray-400" />
-              Top companies by job count
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {jobs.topCompanies.map(({ name, count }) => (
-                <div key={name} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
-                  <span className="text-xs font-medium text-gray-700 truncate">{name}</span>
-                  <span className="text-xs font-bold text-gray-900 ml-2 shrink-0">{count}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>

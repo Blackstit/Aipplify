@@ -13,6 +13,22 @@ export async function POST(request: Request) {
       )
     }
 
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      select: { id: true, status: true },
+    })
+    if (!job || job.status !== "PUBLISHED") {
+      return NextResponse.json({ error: "Job not found or not published" }, { status: 404 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, status: true },
+    })
+    if (!user || user.status !== "ACTIVE") {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
     // Check if application already exists
     const existing = await prisma.application.findUnique({
       where: {
@@ -31,7 +47,9 @@ export async function POST(request: Request) {
       })
     }
 
-    // Create new application
+    // Note: Job.applyCount is incremented separately via /api/jobs/[slug]/apply-click
+    // (one count per viewer per day) so clicks on Apply Now reflect immediately,
+    // independent of whether the user has an Application record.
     const application = await prisma.application.create({
       data: {
         userId,

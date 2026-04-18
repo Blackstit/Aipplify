@@ -7,17 +7,20 @@ import { getCurrentUser } from "@/lib/session"
 import {
   LayoutDashboard,
   Users,
+  Briefcase,
+  Settings,
   ShieldCheck,
   LogOut,
   ChevronRight,
   Menu,
-  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/jobs", label: "Jobs", icon: Briefcase },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

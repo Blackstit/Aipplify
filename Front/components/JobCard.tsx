@@ -11,14 +11,56 @@ import { MapPin, Clock, Briefcase, DollarSign, Eye, Sparkles } from "lucide-reac
 import { formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
 
+/** One shared fetch for “show metrics on cards” (avoid N requests per grid). */
+let publicMetricsCache: boolean | null = null
+let publicMetricsPromise: Promise<boolean> | null = null
+
+function loadPublicJobMetricsFlag(): Promise<boolean> {
+  if (publicMetricsCache !== null) return Promise.resolve(publicMetricsCache)
+  if (!publicMetricsPromise) {
+    publicMetricsPromise = fetch("/api/public/site-settings")
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((raw: unknown) => {
+        const s = raw as { showPublicJobViewCounts?: boolean }
+        const v = typeof s.showPublicJobViewCounts === "boolean" ? s.showPublicJobViewCounts : true
+        publicMetricsCache = v
+        return v
+      })
+      .catch(() => {
+        publicMetricsCache = true
+        return true
+      })
+  }
+  return publicMetricsPromise
+}
+
+/** Call after admin changes site settings so cards refetch on next navigation. */
+export function invalidatePublicJobMetricsCache() {
+  publicMetricsCache = null
+  publicMetricsPromise = null
+}
+
 interface JobCardProps {
   job: JobFrontend
   compact?: boolean
+  /** Override site setting: true / false. Omit to follow admin “public metrics” toggle. */
+  showMetrics?: boolean
 }
 
-export function JobCard({ job, compact = false }: JobCardProps) {
+export function JobCard({ job, compact = false, showMetrics: showMetricsProp }: JobCardProps) {
   const [isViewed, setIsViewed] = useState(false)
+  const [metricsVisible, setMetricsVisible] = useState<boolean>(() =>
+    showMetricsProp !== undefined ? showMetricsProp : (publicMetricsCache ?? true),
+  )
   const postedTime = formatDistanceToNow(new Date(job.postedAt), { addSuffix: true })
+
+  useEffect(() => {
+    if (showMetricsProp !== undefined) {
+      setMetricsVisible(showMetricsProp)
+      return
+    }
+    loadPublicJobMetricsFlag().then(setMetricsVisible)
+  }, [showMetricsProp])
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -156,9 +198,20 @@ export function JobCard({ job, compact = false }: JobCardProps) {
               </div>
             )}
 
-            <div className="flex items-center text-[11px] text-gray-400">
-              <Clock className="h-3 w-3 mr-1" />
-              {postedTime}
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-400">
+              <span className="inline-flex items-center">
+                <Clock className="h-3 w-3 mr-1" />
+                {postedTime}
+              </span>
+              {metricsVisible && (job.viewCount ?? 0) > 0 && (
+                <span
+                  className="inline-flex items-center tabular-nums"
+                  title="Unique visits"
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  {(job.viewCount ?? 0).toLocaleString()}
+                </span>
+              )}
             </div>
           </div>
         </div>

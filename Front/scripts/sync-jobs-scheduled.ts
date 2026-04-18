@@ -24,12 +24,13 @@ function envInt(name: string, fallback: number): number {
 
 async function main() {
   const degenMaxPages = envInt("JOBS_SYNC_DEGEN_MAX_PAGES", 15)
+  const skipDegen = process.env.JOBS_SYNC_SKIP_DEGEN === "1"
   const skipCrypto = process.env.JOBS_SYNC_SKIP_CRYPTO === "1"
   const skipJobEco = process.env.JOBS_SYNC_SKIP_JOB_ECO === "1"
 
   const stamp = () => new Date().toISOString()
   console.log(
-    `[jobs:sync] ${stamp()} start (Degen maxPages=${degenMaxPages}, skipCrypto=${skipCrypto}, skipJobEco=${skipJobEco})`,
+    `[jobs:sync] ${stamp()} start (Degen maxPages=${degenMaxPages}, skipDegen=${skipDegen}, skipCrypto=${skipCrypto}, skipJobEco=${skipJobEco})`,
   )
 
   if (!process.env.DATABASE_URL) {
@@ -37,12 +38,18 @@ async function main() {
     process.exit(1)
   }
 
-  const { parseAndSaveJobs: parseDegen } = await import("../lib/parsers/degencryptojobs")
-  const degen = await parseDegen(1, degenMaxPages)
-  console.log(`[jobs:sync] DegenCryptoJobs: saved=${degen.jobsSaved} updated=${degen.jobsUpdated} companies=${degen.companiesSaved} errors=${degen.errors.length}`)
-  if (degen.errors.length) {
-    degen.errors.slice(0, 5).forEach((e) => console.error(`  - ${e}`))
-    if (degen.errors.length > 5) console.error(`  ... и ещё ${degen.errors.length - 5}`)
+  if (!skipDegen) {
+    try {
+      const { parseAndSaveJobs: parseDegen } = await import("../lib/parsers/degencryptojobs")
+      const degen = await parseDegen(1, degenMaxPages)
+      console.log(`[jobs:sync] DegenCryptoJobs: saved=${degen.jobsSaved} updated=${degen.jobsUpdated} companies=${degen.companiesSaved} errors=${degen.errors.length}`)
+      if (degen.errors.length) {
+        degen.errors.slice(0, 5).forEach((e) => console.error(`  - ${e}`))
+        if (degen.errors.length > 5) console.error(`  ... и ещё ${degen.errors.length - 5}`)
+      }
+    } catch (e) {
+      console.error("[jobs:sync] Degen: фатальная ошибка:", e)
+    }
   }
 
   if (!skipCrypto) {

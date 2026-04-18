@@ -23,8 +23,26 @@ export function ApplyButton({
   const [open, setOpen] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
 
+  const recordApplyClick = () => {
+    try {
+      let sid = sessionStorage.getItem("aipplify_viewer_key") || ""
+      if (!sid) {
+        sid = crypto.randomUUID()
+        sessionStorage.setItem("aipplify_viewer_key", sid)
+      }
+      fetch(`/api/jobs/${encodeURIComponent(jobSlug)}/apply-click`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "x-viewer-key": sid },
+      }).catch(() => {})
+    } catch {
+      /* sessionStorage unavailable; ignore */
+    }
+  }
+
   const handleOpenModal = () => {
     trackApplyClick(jobSlug, jobTitle)
+    recordApplyClick()
     if (!getCurrentUser()) {
       setShowAuthModal(true)
       return

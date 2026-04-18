@@ -14,9 +14,44 @@ import {
 import {
   ArrowLeft, Save, CheckCircle2, AlertCircle, User, Shield,
   Mail, Key, Calendar, Clock, Briefcase, FileText,
+  Activity, Monitor, Smartphone, Globe, MapPin, ExternalLink,
 } from "lucide-react"
 import { formatDistanceToNow, format } from "date-fns"
 import { cn } from "@/lib/utils"
+
+interface VisitorInfo {
+  id: string
+  firstSeen: string
+  lastSeen: string
+  pageViews: number
+  firstPath: string | null
+  firstReferrer: string | null
+  userAgent: string | null
+  ip: string | null
+  country: string | null
+}
+
+interface PageViewInfo {
+  id: string
+  visitorId: string
+  path: string
+  referrer: string | null
+  createdAt: string
+}
+
+interface SessionInfo {
+  createdAt: string
+  ip: string | null
+  userAgent: string | null
+  revokedAt: string | null
+  expiresAt: string
+}
+
+interface UserActivity {
+  visitors: VisitorInfo[]
+  pageViews: PageViewInfo[]
+  lastSession: SessionInfo | null
+}
 
 interface UserDetail {
   id: string
@@ -30,6 +65,56 @@ interface UserDetail {
   updatedAt: string
   lastLoginAt: string | null
   _count: { applications: number; sessions: number }
+  activity?: UserActivity
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+/** Short human-friendly OS/browser label for a User-Agent string. */
+function describeUA(ua: string | null | undefined) {
+  if (!ua) return { label: "Unknown device", icon: Monitor }
+  const isMobile = /iPhone|iPad|Android/i.test(ua)
+  let os = "Unknown"
+  if (/iPhone|iPad|iOS/.test(ua)) os = "iOS"
+  else if (/Android/.test(ua)) os = "Android"
+  else if (/Mac OS X/.test(ua)) os = "macOS"
+  else if (/Windows/.test(ua)) os = "Windows"
+  else if (/Linux/.test(ua)) os = "Linux"
+
+  let browser = ""
+  if (/Edg\//.test(ua)) browser = "Edge"
+  else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = "Chrome"
+  else if (/Firefox\//.test(ua)) browser = "Firefox"
+  else if (/Safari\//.test(ua)) browser = "Safari"
+
+  return {
+    label: browser ? `${browser} · ${os}` : os,
+    icon: isMobile ? Smartphone : Monitor,
+  }
+}
+
+function hostOf(url: string | null | undefined): string {
+  if (!url) return "Direct"
+  try {
+    return new URL(url).host.replace(/^www\./, "")
+  } catch {
+    return "Direct"
+  }
+}
+
+function prettyPath(p: string | null | undefined): string {
+  if (!p) return "—"
+  if (p === "/") return "/ (home)"
+  return p
+}
+
+/** ISO-2 → flag emoji. Works because every uppercase ASCII letter has a
+ * regional-indicator counterpart starting at U+1F1E6. */
+function flagEmoji(iso2: string | null | undefined): string {
+  if (!iso2 || iso2.length !== 2) return ""
+  const A = "A".charCodeAt(0)
+  const base = 0x1f1e6
+  const up = iso2.toUpperCase()
+  return String.fromCodePoint(base + (up.charCodeAt(0) - A), base + (up.charCodeAt(1) - A))
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -362,6 +447,164 @@ export default function AdminUserEditPage() {
           Save Changes
         </Button>
       </div>
+
+      {/* ── Activity & Devices ───────────────────────────────────────────── */}
+      <ActivityPanel activity={user.activity} />
+    </div>
+  )
+}
+
+// ─── Activity & Devices panel ─────────────────────────────────────────────────
+function ActivityPanel({ activity }: { activity: UserActivity | undefined }) {
+  if (!activity) return null
+  const { visitors, pageViews, lastSession } = activity
+  const hasAny = visitors.length > 0 || pageViews.length > 0 || lastSession
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-5">
+      <div className="flex items-center gap-2">
+        <Activity className="h-4 w-4 text-gray-400" />
+        <h2 className="font-semibold text-sm">Activity &amp; Devices</h2>
+        <span className="text-[11px] text-gray-400">· last known sessions, IPs and pageviews</span>
+      </div>
+
+      {!hasAny && (
+        <p className="text-xs text-gray-400 py-4">
+          No tracked activity yet. Data appears after the user browses the site
+          while logged in, or after they log in with an existing visitor cookie.
+        </p>
+      )}
+
+      {/* Last session card */}
+      {lastSession && (
+        <div className="bg-gray-50 rounded-lg border border-gray-100 p-4">
+          <p className="text-[11px] text-gray-500 uppercase tracking-wide font-medium mb-2">Last login session</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="flex items-start gap-2">
+              <Clock className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-gray-500">When</p>
+                <p className="font-medium text-gray-800">
+                  {formatDistanceToNow(new Date(lastSession.createdAt), { addSuffix: true })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              {(() => {
+                const { label, icon: Icon } = describeUA(lastSession.userAgent)
+                return (
+                  <>
+                    <Icon className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-gray-500">Device</p>
+                      <p className="font-medium text-gray-800 truncate">{label}</p>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+            <div className="flex items-start gap-2">
+              <Globe className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-gray-500">IP</p>
+                <p className="font-mono text-gray-800">{lastSession.ip || "—"}</p>
+              </div>
+            </div>
+          </div>
+          {lastSession.revokedAt && (
+            <p className="text-[11px] text-red-600 mt-3">
+              Session revoked {formatDistanceToNow(new Date(lastSession.revokedAt), { addSuffix: true })}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Visitor cookies (devices) */}
+      {visitors.length > 0 && (
+        <div>
+          <p className="text-[11px] text-gray-500 uppercase tracking-wide font-medium mb-2">
+            Devices & referrers ({visitors.length})
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {visitors.map((v) => {
+              const { label: uaLabel, icon: UAIcon } = describeUA(v.userAgent)
+              const flag = flagEmoji(v.country)
+              return (
+                <div
+                  key={v.id}
+                  className="border border-gray-200 rounded-lg p-3 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <UAIcon className="h-4 w-4 text-gray-500 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{uaLabel}</p>
+                        <p className="text-[11px] text-gray-400 font-mono">
+                          …{v.id.slice(-8)}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-gray-500 shrink-0">
+                      {formatDistanceToNow(new Date(v.lastSeen), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-600">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-gray-400" />
+                      {v.country ? (
+                        <>
+                          {flag && <span className="text-sm leading-none">{flag}</span>}
+                          <span className="font-medium">{v.country}</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">unknown</span>
+                      )}
+                      {v.ip && <span className="text-gray-400 font-mono ml-1">({v.ip})</span>}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <ExternalLink className="h-3 w-3 text-gray-400" />
+                      {v.firstReferrer ? hostOf(v.firstReferrer) : <span className="italic text-gray-400">direct</span>}
+                    </span>
+                    <span className="text-gray-500">
+                      {v.pageViews} {v.pageViews === 1 ? "view" : "views"}
+                    </span>
+                  </div>
+                  {v.firstPath && (
+                    <p className="text-[11px] text-gray-500 truncate">
+                      Landed on <span className="font-mono text-gray-700">{prettyPath(v.firstPath)}</span>
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Recent page views */}
+      {pageViews.length > 0 && (
+        <div>
+          <p className="text-[11px] text-gray-500 uppercase tracking-wide font-medium mb-2">
+            Recent activity ({pageViews.length})
+          </p>
+          <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 overflow-hidden">
+            {pageViews.map((pv) => (
+              <div key={pv.id} className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-gray-50">
+                <span className="text-gray-400 shrink-0 w-16">
+                  {format(new Date(pv.createdAt), "dd MMM HH:mm")}
+                </span>
+                <span className="text-gray-800 font-mono truncate flex-1">{pv.path}</span>
+                {pv.referrer ? (
+                  <span className="text-gray-400 shrink-0 text-[11px] inline-flex items-center gap-1">
+                    <ExternalLink className="h-3 w-3" />
+                    {hostOf(pv.referrer)}
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

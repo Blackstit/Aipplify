@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { fetchVacancies, vacancyToJobFrontend } from "@/lib/job-eco-api"
+import { getSimilarJobs } from "@/lib/jobs"
 
 export const dynamic = "force-dynamic"
 
@@ -9,19 +9,8 @@ export async function GET(
 ) {
   try {
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get("limit") || "6")
-
-    const params = new URLSearchParams()
-    params.set("page", "1")
-    params.set("per_page", String(limit))
-    params.set("sort", "date_desc")
-
-    const data = await fetchVacancies(params)
-    const jobs = (data.items || [])
-      .filter((item) => `job-eco-${item.id}` !== routeParams.slug)
-      .slice(0, limit)
-      .map(vacancyToJobFrontend)
-
+    const limit = Math.min(20, Math.max(1, parseInt(searchParams.get("limit") || "6")))
+    const jobs = await getSimilarJobs(routeParams.slug, limit)
     return NextResponse.json({ jobs })
   } catch (error) {
     console.error("Error fetching similar jobs:", error)

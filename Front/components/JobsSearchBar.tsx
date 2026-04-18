@@ -57,7 +57,14 @@ export function JobsSearchBar({ onSearchChange, defaultValue = "" }: JobsSearchB
   const onSearchChangeRef = useRef(onSearchChange)
   onSearchChangeRef.current = onSearchChange
 
+  // Не дергаем поиск при первом монтировании: SSR уже отдал список с тем же query.
+  // Иначе через 500ms срабатывает лишний fetch → спиннер, «мигание» и сдвиг вёрстки.
+  const skipDebounceOnMount = useRef(true)
   useEffect(() => {
+    if (skipDebounceOnMount.current) {
+      skipDebounceOnMount.current = false
+      return
+    }
     const timeoutId = setTimeout(() => {
       onSearchChangeRef.current?.(searchQuery)
     }, 500)

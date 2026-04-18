@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getUserByEmail, verifyPassword } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sendVerificationEmail } from "@/lib/email"
 import { z } from "zod"
 
 const loginSchema = z.object({
@@ -49,11 +50,42 @@ export async function POST(request: Request) {
       )
     }
 
+    // Check email verification
+    if (!user.emailVerified) {
+      const code = String(Math.floor(100000 + Math.random() * 900000))
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+      await prisma.verificationCode.deleteMany({ where: { email: user.email } })
+      await prisma.verificationCode.create({ data: { email: user.email, code, expiresAt } })
+      await sendVerificationEmail(user.email, code)
+      return NextResponse.json(
+        { requiresVerification: true, email: user.email },
+        { status: 403 }
+      )
+    }
+
     // Update last login time
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     })
+
+    // If the client already has an anonymous visitor cookie, stamp the user id
+    // onto it so the admin activity view can show their devices / referrers.
+    const cookieHeader = request.headers.get("cookie")
+    if (cookieHeader) {
+      const m = cookieHeader.match(/(?:^|;\s*)aipplify_vid=([^;]+)/)
+      if (m?.[1]) {
+        const visitorId = decodeURIComponent(m[1])
+        try {
+          await prisma.visitor.updateMany({
+            where: { id: visitorId },
+            data: { userId: user.id },
+          })
+        } catch {
+          // non-fatal — auth should still succeed
+        }
+      }
+    }
 
     // Return user without password
     const { passwordHash, ...userWithoutPassword } = user

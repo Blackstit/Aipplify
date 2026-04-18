@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { createUser, getUserByEmail } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { sendVerificationEmail } from "@/lib/email"
 import { z } from "zod"
 
 const registerSchema = z.object({
@@ -10,22 +12,33 @@ const registerSchema = z.object({
   companyName: z.string().optional(),
 })
 
+function generateCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000))
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const validatedData = registerSchema.parse(body)
 
-    // Check if user already exists
     const existingUser = await getUserByEmail(validatedData.email)
     if (existingUser) {
-      return NextResponse.json(
-        { error: "User with this email already exists" },
-        { status: 400 }
-      )
+      // If already registered but not verified — resend code
+      if (!existingUser.emailVerified) {
+        const code = generateCode()
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+
+        await prisma.verificationCode.deleteMany({ where: { email: validatedData.email } })
+        await prisma.verificationCode.create({ data: { email: validatedData.email, code, expiresAt } })
+        await sendVerificationEmail(validatedData.email, code)
+
+        return NextResponse.json({ requiresVerification: true, email: validatedData.email }, { status: 200 })
+      }
+
+      return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
     }
 
-    // Create user
-    const user = await createUser(
+    await createUser(
       validatedData.email,
       validatedData.password,
       validatedData.name,
@@ -33,29 +46,20 @@ export async function POST(request: Request) {
       validatedData.companyName
     )
 
-    // Return user without password
-    const { passwordHash, ...userWithoutPassword } = user
+    const code = generateCode()
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
 
-    return NextResponse.json(
-      {
-        success: true,
-        user: userWithoutPassword,
-        message: "User registered successfully",
-      },
-      { status: 201 }
-    )
+    await prisma.verificationCode.deleteMany({ where: { email: validatedData.email } })
+    await prisma.verificationCode.create({ data: { email: validatedData.email, code, expiresAt } })
+    await sendVerificationEmail(validatedData.email, code)
+
+    return NextResponse.json({ requiresVerification: true, email: validatedData.email }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0]?.message ?? "Validation error" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: error.issues[0]?.message ?? "Validation error" }, { status: 400 })
     }
 
     console.error("Registration error:", error)
-    return NextResponse.json(
-      { error: "Failed to register user" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to register user" }, { status: 500 })
   }
 }

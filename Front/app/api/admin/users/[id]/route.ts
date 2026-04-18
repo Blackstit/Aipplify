@@ -18,6 +18,76 @@ const USER_SELECT = {
   _count: { select: { applications: true, sessions: true } },
 }
 
+/**
+ * Load visitor activity attached to this user (via `Visitor.userId`), plus their
+ * latest page views. We also pull the most recent authenticated Session to surface
+ * the last known IP / UA even for users with no Visitor rows yet.
+ */
+async function loadUserActivity(userId: string) {
+  const visitors = await prisma.visitor.findMany({
+    where: { userId },
+    orderBy: { lastSeen: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      firstSeen: true,
+      lastSeen: true,
+      pageViews: true,
+      firstPath: true,
+      firstReferrer: true,
+      userAgent: true,
+      ip: true,
+      country: true,
+    },
+  })
+
+  const visitorIds = visitors.map((v) => v.id)
+
+  // Recent individual page views, up to 30 across all this user's visitor cookies.
+  const pageViews = visitorIds.length
+    ? await prisma.pageView.findMany({
+        where: { visitorId: { in: visitorIds } },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        select: {
+          id: true,
+          visitorId: true,
+          path: true,
+          referrer: true,
+          createdAt: true,
+        },
+      })
+    : []
+
+  // Last session gives us the last-known login IP/UA even if the visitor
+  // cookie was cleared.
+  const lastSession = await prisma.session.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true, ip: true, userAgent: true, revokedAt: true, expiresAt: true },
+  })
+
+  return {
+    visitors: visitors.map((v) => ({
+      ...v,
+      firstSeen: v.firstSeen.toISOString(),
+      lastSeen: v.lastSeen.toISOString(),
+    })),
+    pageViews: pageViews.map((pv) => ({
+      ...pv,
+      createdAt: pv.createdAt.toISOString(),
+    })),
+    lastSession: lastSession
+      ? {
+          ...lastSession,
+          createdAt: lastSession.createdAt.toISOString(),
+          expiresAt: lastSession.expiresAt.toISOString(),
+          revokedAt: lastSession.revokedAt?.toISOString() ?? null,
+        }
+      : null,
+  }
+}
+
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   const admin = await getAdminFromRequest(request)
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -25,7 +95,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const user = await prisma.user.findUnique({ where: { id: params.id }, select: USER_SELECT })
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-  return NextResponse.json(user)
+  const activity = await loadUserActivity(params.id)
+
+  return NextResponse.json({ ...user, activity })
 }
 
 const updateSchema = z.object({

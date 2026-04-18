@@ -1,6 +1,5 @@
 import { MetadataRoute } from "next"
-import { fetchVacancies } from "@/lib/job-eco-api"
-import { generateJobSlug } from "@/lib/slug"
+import { prisma } from "@/lib/prisma"
 import { getAllBlogPosts, BLOG_PER_PAGE } from "@/lib/mockBlog"
 import { getAllCompanies } from "@/lib/companies"
 
@@ -58,13 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    const firstParams = new URLSearchParams()
-    firstParams.set("page", "1")
-    firstParams.set("per_page", "200")
-    firstParams.set("sort", "date_desc")
-    const firstPage = await fetchVacancies(firstParams)
-
-    const total = firstPage.total || 0
+    const total = await prisma.job.count({ where: { status: "PUBLISHED" } })
     const totalListingPages = Math.ceil(total / JOBS_PER_PAGE)
 
     for (let p = 2; p <= totalListingPages; p++) {
@@ -76,24 +69,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })
     }
 
-    let allItems = firstPage.items || []
-    const totalApiPages = Math.ceil(total / 200)
-
-    for (let p = 2; p <= totalApiPages; p++) {
-      const params = new URLSearchParams()
-      params.set("page", String(p))
-      params.set("per_page", "200")
-      params.set("sort", "date_desc")
-      const pageData = await fetchVacancies(params)
-      allItems = [...allItems, ...(pageData.items || [])]
-    }
-
-    for (const item of allItems) {
-      const companyName = item.company?.name || item.company_name || null
-      const slug = generateJobSlug(item.id, item.title, companyName)
+    const jobs = await prisma.job.findMany({
+      where: { status: "PUBLISHED" },
+      select: { slug: true, postedAt: true, updatedAt: true },
+      orderBy: { postedAt: "desc" },
+      take: 10000,
+    })
+    for (const j of jobs) {
       entries.push({
-        url: `${SITE_URL}/jobs/${slug}`,
-        lastModified: new Date(item.created_at),
+        url: `${SITE_URL}/jobs/${j.slug}`,
+        lastModified: j.updatedAt || j.postedAt || new Date(),
         changeFrequency: "weekly",
         priority: 0.8,
       })

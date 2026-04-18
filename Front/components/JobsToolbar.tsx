@@ -16,6 +16,8 @@ import { RefreshButton } from "./RefreshButton"
 
 interface JobsToolbarProps {
   totalJobs: number
+  /** UI value: newest | oldest | salary-high … (синхронизировать с родителем / URL) */
+  sortBy: string
   onSortChange?: (sortBy: string) => void
   onHideViewedChange?: (hide: boolean) => void
   onRefresh?: () => void
@@ -24,16 +26,15 @@ interface JobsToolbarProps {
 
 export function JobsToolbar({
   totalJobs,
+  sortBy,
   onSortChange,
   onHideViewedChange,
   onRefresh,
   lastUpdated,
 }: JobsToolbarProps) {
   const [hideViewed, setHideViewed] = useState(false)
-  const [sortBy, setSortBy] = useState("newest")
 
   const handleSortChange = (value: string) => {
-    setSortBy(value)
     onSortChange?.(value)
   }
 

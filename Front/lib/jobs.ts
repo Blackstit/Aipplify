@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import type { Job, Company } from "@prisma/client"
+import type { Job, Company, Prisma } from "@prisma/client"
 
 const SITE = process.env.NEXT_PUBLIC_BASE_URL || "https://aipplify.com"
 
@@ -13,7 +13,7 @@ export function normalizeLogoUrl(url: string | null | undefined): string | null 
   return u
 }
 
-// Define a more comprehensive Job type for the frontend
+// Rich frontend shape (kept compatible with the live job-eco mapper in lib/job-eco-api.ts).
 export interface JobFrontend {
   id: string
   slug: string
@@ -61,112 +61,149 @@ export interface JobFrontend {
     socials: Record<string, string> | null
     domains: string[] | null
   } | null
+  countryCity?: string | null
+  locationType?: string | null
+  /** Total unique visitor-days counted (see JobUniqueDailyView). */
+  viewCount?: number
+  /** Successful “Apply” saves (Application rows). */
+  applyCount?: number
 }
 
-// Transform Prisma Job to frontend format
-export function transformJob(job: Job & { company: Company | null }): JobFrontend {
+function formatSalary(min: number | null, max: number | null, currency: string | null, fallbackText: string | null): string {
+  const cur = currency || "USD"
+  if (fallbackText && fallbackText.trim()) return fallbackText.trim()
+  if (min != null && max != null) return `$${min.toLocaleString()} – $${max.toLocaleString()} ${cur}`
+  if (max != null) return `Up to $${max.toLocaleString()} ${cur}`
+  if (min != null) return `From $${min.toLocaleString()} ${cur}`
+  return "Not specified"
+}
+
+type JobWithCompany = Job & { company: Company | null }
+
+export function transformJob(job: JobWithCompany): JobFrontend {
+  const wt = job.workType.toLowerCase() as "remote" | "hybrid" | "office"
+  const company = job.company
+  const companyName = company?.name || "Unknown Company"
+  const locationText =
+    job.locationText && job.locationText.trim()
+      ? job.locationText
+      : (job.countryCity && job.countryCity.trim())
+        ? job.countryCity
+        : wt === "remote" ? "Remote" : wt === "hybrid" ? "Hybrid" : "Office / on-site"
+
+  // Extract scoring JSON safely.
+  const scoringJson = (job.scoring as unknown) as JobFrontend["scoring"] | null
+  const socialsJson = (company?.socials as unknown) as Record<string, string> | null
+
   return {
     id: job.id,
     slug: job.slug,
     title: job.title,
     company: {
-      id: job.company?.id || "",
-      name: job.company?.name || "Unknown Company",
-      slug: job.company?.slug || "",
-      logo: normalizeLogoUrl(job.company?.logoUrl),
-      verified: job.company?.verified || false,
+      id: company?.id || "",
+      name: companyName,
+      slug: company?.slug || "",
+      logo: normalizeLogoUrl(company?.logoUrl),
+      verified: company?.verified || false,
     },
-    salary: job.salaryText || 
-      (job.salaryMin && job.salaryMax 
-        ? `${job.salaryMin} - ${job.salaryMax} ${job.currency || ""}`.trim()
-        : job.salaryMin 
-          ? `From ${job.salaryMin} ${job.currency || ""}`.trim()
-          : "Not specified"),
-    location: job.locationText,
-    workType: job.workType.toLowerCase() as "remote" | "hybrid" | "office",
-    region: "global" as const, // TODO: Extract from location if needed
-    specialization: "", // TODO: Extract from tags or add field
-    experience: job.experience.toLowerCase() as "intern" | "junior" | "mid" | "senior" | "lead",
-    tags: job.tags,
+    salary: formatSalary(job.salaryMin, job.salaryMax, job.currency ? String(job.currency) : null, job.salaryText),
+    location: locationText,
+    workType: wt,
+    region: "global",
+    specialization: job.role || "",
+    experience: job.experience.toLowerCase() as JobFrontend["experience"],
+    tags: job.tags || [],
     description: job.description,
-    requirements: job.requirements 
-      ? (typeof job.requirements === "string" ? [job.requirements] : Array.isArray(job.requirements) ? job.requirements : [])
-      : [],
-    postedAt: job.postedAt?.toISOString() || job.createdAt.toISOString(),
+    requirements: job.requirements ? [job.requirements] : [],
+    postedAt: (job.postedAt || job.createdAt).toISOString(),
     featured: job.featured,
-    verified: job.verified || job.company?.verified || false,
+    verified: job.verified || company?.verified || false,
     recruiterContact: job.recruiterContact || null,
     sourceUrl: job.sourceUrl || null,
     salaryMin: job.salaryMin,
     salaryMax: job.salaryMax,
     currency: job.currency != null ? String(job.currency) : null,
+    aiScore: job.aiScore ?? null,
+    scoring: scoringJson ?? null,
+    companyInfo: company
+      ? {
+          name: company.name,
+          website: company.website,
+          logo_url: normalizeLogoUrl(company.logoUrl),
+          industry: company.industry,
+          size: company.size,
+          founded: company.founded,
+          headquarters: company.headquarters,
+          summary: company.summary,
+          socials: socialsJson,
+          domains: company.domains && company.domains.length ? company.domains : null,
+        }
+      : null,
+    countryCity: job.countryCity || null,
+    locationType: job.locationType || null,
+    viewCount: job.viewCount ?? 0,
+    applyCount: job.applyCount ?? 0,
   }
 }
 
-// Get all jobs from database
-export async function getAllJobsFromDB() {
+// ---------- Queries ----------
+
+const JOB_INCLUDE = { company: true } as const
+
+export async function getAllJobsFromDB(): Promise<JobFrontend[]> {
   const jobs = await prisma.job.findMany({
-    where: {
-      status: "PUBLISHED"
-    },
-    include: {
-      company: true
-    },
+    where: { status: "PUBLISHED" },
+    include: JOB_INCLUDE,
     orderBy: [
       { featured: "desc" },
       { verified: "desc" },
       { postedAt: "desc" },
-      { createdAt: "desc" }
-    ]
+      { createdAt: "desc" },
+    ],
   })
-  
   return jobs.map(transformJob)
 }
 
-// Get job by slug
-export async function getJobBySlugFromDB(slug: string) {
+export async function getJobBySlugFromDB(slug: string): Promise<JobFrontend | null> {
   const job = await prisma.job.findUnique({
     where: { slug },
-    include: {
-      company: true
-    }
+    include: JOB_INCLUDE,
   })
-  
   if (!job) return null
-  
+  if (job.status !== "PUBLISHED") {
+    // Only serve published on public pages.
+    return null
+  }
   return transformJob(job)
 }
 
-// Get similar jobs by tags, company, or experience level
-export async function getSimilarJobs(jobSlug: string, limit: number = 6) {
+export async function getJobByExternalId(source: "JOB_ECO", externalId: number): Promise<JobFrontend | null> {
+  const job = await prisma.job.findUnique({
+    where: { source_externalId: { source, externalId } },
+    include: JOB_INCLUDE,
+  })
+  if (!job || job.status !== "PUBLISHED") return null
+  return transformJob(job)
+}
+
+export async function getSimilarJobs(jobSlug: string, limit: number = 6): Promise<JobFrontend[]> {
   const currentJob = await prisma.job.findUnique({
     where: { slug: jobSlug },
-    include: { company: true }
+    include: JOB_INCLUDE,
   })
-
   if (!currentJob) return []
 
-  const where: any = {
-    status: "PUBLISHED",
-    slug: { not: jobSlug }, // Exclude current job
-  }
-
-  // Find jobs with similar tags, same company, or same experience level
   const similarJobs = await prisma.job.findMany({
     where: {
-      ...where,
+      status: "PUBLISHED",
+      slug: { not: jobSlug },
       OR: [
-        // Jobs with overlapping tags
         { tags: { hasSome: currentJob.tags.slice(0, 5) } },
-        // Jobs from same company
-        { companyId: currentJob.companyId },
-        // Jobs with same experience level
+        { companyId: currentJob.companyId || undefined },
         { experience: currentJob.experience },
       ],
     },
-    include: {
-      company: true,
-    },
+    include: JOB_INCLUDE,
     orderBy: [
       { featured: "desc" },
       { verified: "desc" },
@@ -174,11 +211,10 @@ export async function getSimilarJobs(jobSlug: string, limit: number = 6) {
     ],
     take: limit,
   })
-
   return similarJobs.map(transformJob)
 }
 
-// Get jobs with filters
+// Public list with filters (for /jobs page and /api/jobs).
 export async function getJobsWithFilters(params: {
   page?: number
   limit?: number
@@ -188,122 +224,109 @@ export async function getJobsWithFilters(params: {
   workType?: string[]
   experience?: string[]
   tags?: string[]
-}) {
-  const page = params.page || 1
-  const limit = params.limit || 10
+  salaryMin?: number
+  sort?: string
+}): Promise<{
+  jobs: JobFrontend[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}> {
+  const page = Math.max(1, params.page || 1)
+  const limit = Math.min(200, Math.max(1, params.limit || 10))
   const skip = (page - 1) * limit
-  
-  const where: any = {
-    status: "PUBLISHED"
-  }
-  
-  // Search filter
-  if (params.search) {
+
+  const where: Prisma.JobWhereInput = { status: "PUBLISHED" }
+
+  if (params.search?.trim()) {
+    const q = params.search.trim()
     where.OR = [
-      { title: { contains: params.search, mode: "insensitive" } },
-      { description: { contains: params.search, mode: "insensitive" } },
-      { tags: { hasSome: [params.search] } },
-      { company: { name: { contains: params.search, mode: "insensitive" } } }
+      { title: { contains: q, mode: "insensitive" } },
+      { summary: { contains: q, mode: "insensitive" } },
+      { description: { contains: q, mode: "insensitive" } },
+      { tags: { hasSome: [q] } },
+      { skills: { hasSome: [q] } },
+      { company: { name: { contains: q, mode: "insensitive" } } },
     ]
   }
-  
-  // Featured filter
-  if (params.featured !== undefined) {
-    where.featured = params.featured
-  }
-  
-  // Verified filter
-  if (params.verified !== undefined) {
-    where.OR = [
-      { verified: params.verified },
-      { company: { verified: params.verified } }
-    ]
-  }
-  
-  // Work type filter
+
+  if (params.featured !== undefined) where.featured = params.featured
+  if (params.verified !== undefined) where.verified = params.verified
+
   if (params.workType && params.workType.length > 0) {
-    where.workType = { in: params.workType.map(wt => wt.toUpperCase()) }
+    where.workType = { in: params.workType.map((v) => v.toUpperCase()) as Prisma.JobWhereInput["workType"] extends { in?: infer X } ? X extends Array<infer Y> ? Y[] : never : never }
   }
-  
-  // Experience filter
   if (params.experience && params.experience.length > 0) {
-    where.experience = { in: params.experience.map(exp => exp.toUpperCase()) }
+    where.experience = { in: params.experience.map((v) => v.toUpperCase()) as any }
   }
-  
-  // Tags filter
   if (params.tags && params.tags.length > 0) {
     where.tags = { hasSome: params.tags }
   }
-  
+  if (params.salaryMin != null) {
+    where.OR = [...(where.OR || []), { salaryMax: { gte: params.salaryMin } }, { salaryMin: { gte: params.salaryMin } }]
+  }
+
+  const sort = params.sort || "date_desc"
+  const orderBy: Prisma.JobOrderByWithRelationInput[] = (() => {
+    switch (sort) {
+      case "date_asc":
+        return [{ featured: "desc" }, { postedAt: "asc" }, { createdAt: "asc" }]
+      case "salary_desc":
+        return [{ featured: "desc" }, { salaryMax: { sort: "desc", nulls: "last" } }, { postedAt: "desc" }]
+      case "salary_asc":
+        return [{ featured: "desc" }, { salaryMin: { sort: "asc", nulls: "last" } }, { postedAt: "desc" }]
+      case "score_desc":
+        return [{ featured: "desc" }, { aiScore: { sort: "desc", nulls: "last" } }, { postedAt: "desc" }]
+      case "score_asc":
+        return [{ featured: "desc" }, { aiScore: { sort: "asc", nulls: "last" } }, { postedAt: "desc" }]
+      case "date_desc":
+      default:
+        return [{ featured: "desc" }, { verified: "desc" }, { postedAt: "desc" }, { createdAt: "desc" }]
+    }
+  })()
+
   const [jobs, total] = await Promise.all([
-    prisma.job.findMany({
-      where,
-      include: {
-        company: true
-      },
-      orderBy: [
-        { featured: "desc" },
-        { verified: "desc" },
-        { postedAt: "desc" },
-        { createdAt: "desc" }
-      ],
-      skip,
-      take: limit
-    }),
-    prisma.job.count({ where })
+    prisma.job.findMany({ where, include: JOB_INCLUDE, orderBy, skip, take: limit }),
+    prisma.job.count({ where }),
   ])
-  
+
   return {
     jobs: jobs.map(transformJob),
     total,
     page,
     limit,
-    totalPages: Math.ceil(total / limit)
+    totalPages: Math.ceil(total / limit) || 1,
   }
 }
 
-// Get company by slug
 export async function getCompanyBySlugFromDB(slug: string) {
-  const company = await prisma.company.findUnique({
-    where: { slug },
-  })
-  
+  const company = await prisma.company.findUnique({ where: { slug } })
   if (!company) return null
-  
   return {
     id: company.id,
     slug: company.slug,
     name: company.name,
     website: company.website,
     description: company.description,
-    logo: company.logoUrl,
+    logo: normalizeLogoUrl(company.logoUrl),
     verified: company.verified,
+    industry: company.industry,
+    size: company.size,
+    founded: company.founded,
+    headquarters: company.headquarters,
+    summary: company.summary,
   }
 }
 
-// Get jobs by company slug
-export async function getJobsByCompanySlug(companySlug: string) {
-  const company = await prisma.company.findUnique({
-    where: { slug: companySlug },
-  })
-  
+export async function getJobsByCompanySlug(companySlug: string): Promise<JobFrontend[]> {
+  const company = await prisma.company.findUnique({ where: { slug: companySlug } })
   if (!company) return []
-  
+
   const jobs = await prisma.job.findMany({
-    where: {
-      companyId: company.id,
-      status: "PUBLISHED",
-    },
-    include: {
-      company: true,
-    },
-    orderBy: [
-      { featured: "desc" },
-      { verified: "desc" },
-      { postedAt: "desc" },
-      { createdAt: "desc" },
-    ],
+    where: { companyId: company.id, status: "PUBLISHED" },
+    include: JOB_INCLUDE,
+    orderBy: [{ featured: "desc" }, { verified: "desc" }, { postedAt: "desc" }, { createdAt: "desc" }],
   })
-  
   return jobs.map(transformJob)
 }

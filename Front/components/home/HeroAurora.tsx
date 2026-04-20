@@ -67,32 +67,29 @@ type Orbit = {
   }
 }
 
-// Orbits chosen so the VISIBLE curve avoids the central text zone
-// (roughly x 15–85%, y 22–75%).
-// - Giant ellipses centered at 50%/50% with rx ≥ 55 → left/right arcs
-//   go off-screen, top/bottom arcs pass above/below the text.
-// - Flat wide orbits at y ≈ 13% and y ≈ 88% live entirely in the top
-//   and bottom strips.
+// ONE solar system, centered on the hero. All orbits concentric.
+// rx ≥ 55% guarantees the side arcs go off-screen and the visible top/bottom
+// arcs pass above the pill / below the CTA buttons.
+const SYSTEM_CX = 50
+const SYSTEM_CY = 50
+
 const ORBITS: Orbit[] = [
+  // huge decorative halo
+  { cx: SYSTEM_CX, cy: SYSTEM_CY, rx: 80, ry: 54, opacity: 0.05 },
+  // outer: big slow planet
   {
-    cx: 50, cy: 50, rx: 62, ry: 42, opacity: 0.12,
-    planet: { size: 22, theme: "violetDark", duration: "68s", delay: "-18s" },
+    cx: SYSTEM_CX, cy: SYSTEM_CY, rx: 70, ry: 46, opacity: 0.09,
+    planet: { size: 24, theme: "violetDark", duration: "78s", delay: "-22s" },
   },
+  // middle: medium planet, reverse direction for balance
   {
-    cx: 50, cy: 50, rx: 55, ry: 37, opacity: 0.1,
-    planet: { size: 16, theme: "indigo", duration: "52s", delay: "-8s", reverse: true },
+    cx: SYSTEM_CX, cy: SYSTEM_CY, rx: 62, ry: 40, opacity: 0.12,
+    planet: { size: 18, theme: "indigo", duration: "56s", delay: "-10s", reverse: true },
   },
+  // inner: small fast planet
   {
-    cx: 50, cy: 13, rx: 44, ry: 5, opacity: 0.2,
-    planet: { size: 12, theme: "fuchsia", duration: "34s", delay: "-6s" },
-  },
-  {
-    cx: 50, cy: 87, rx: 46, ry: 5, opacity: 0.18,
-    planet: { size: 14, theme: "purple", duration: "38s", delay: "-14s", reverse: true },
-  },
-  {
-    cx: 50, cy: 50, rx: 68, ry: 46, opacity: 0.06,
-    // decorative — no planet
+    cx: SYSTEM_CX, cy: SYSTEM_CY, rx: 55, ry: 36, opacity: 0.14,
+    planet: { size: 14, theme: "fuchsia", duration: "42s", delay: "-5s" },
   },
 ]
 

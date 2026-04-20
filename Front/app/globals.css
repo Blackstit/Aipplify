@@ -76,6 +76,17 @@
 .twinkle { animation: twinkle 3.6s ease-in-out infinite; }
 .spotlight-sweep { animation: spotlight-sweep 16s ease-in-out infinite; }
 
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes orbit-spin-reverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+.orbit-spin         { animation: orbit-spin         linear infinite; }
+.orbit-spin-reverse { animation: orbit-spin-reverse linear infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-fade-in-up {
@@ -84,7 +95,8 @@
     transform: none !important;
   }
   .orb-a, .orb-b, .orb-c, .orb-d,
-  .aurora-hue, .twinkle, .spotlight-sweep {
+  .aurora-hue, .twinkle, .spotlight-sweep,
+  .orbit-spin, .orbit-spin-reverse {
     animation: none !important;
   }
 }

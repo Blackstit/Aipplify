@@ -7,7 +7,6 @@ import { AnimatedCounter } from "@/components/home/AnimatedCounter"
 import { CompaniesMarquee } from "@/components/home/CompaniesMarquee"
 import { JobColumnsMarquee } from "@/components/home/JobColumnsMarquee"
 import { FloatingCards } from "@/components/home/FloatingCards"
-import { HeroAurora } from "@/components/home/HeroAurora"
 import {
   ArrowRight, Briefcase, Sparkles, Zap, TrendingUp,
   Shield, Globe, Bot, ChevronRight,
@@ -145,25 +144,25 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="absolute -top-[40%] -right-[20%] w-[80%] h-[80%] bg-gradient-to-br from-primary/5 via-purple-500/5 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-[30%] -left-[20%] w-[70%] h-[70%] bg-gradient-to-tr from-blue-500/5 via-primary/5 to-transparent rounded-full blur-3xl" />
+      </div>
+
       <div className="relative z-10">
-        <section className="relative min-h-[85vh] flex items-center justify-center px-6 overflow-hidden">
+        <section className="relative min-h-[85vh] flex items-center justify-center px-6">
           <PerspectiveGrid />
-          <HeroAurora />
           <FloatingCards jobs={recentJobs} />
 
           <div className="text-center space-y-8 max-w-4xl mx-auto relative z-10">
-            <div className="inline-flex items-center gap-2 rounded-full p-[1px] bg-gradient-to-r from-indigo-500/60 via-purple-500/60 to-fuchsia-500/60 shadow-[0_8px_32px_-12px_rgba(124,58,237,0.45)]">
-              <span className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-md text-sm font-medium px-4 py-1.5 rounded-full">
-                <Sparkles className="h-4 w-4 text-purple-600" />
-                <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent font-semibold">
-                  AI-Powered Job Board
-                </span>
-              </span>
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-medium px-4 py-1.5 rounded-full">
+              <Sparkles className="h-4 w-4" />
+              AI-Powered Job Board
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.1] drop-shadow-[0_4px_30px_rgba(124,58,237,0.08)]">
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.1]">
               Find the job you
-              <span className="block bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
                 actually deserve
               </span>
             </h1>

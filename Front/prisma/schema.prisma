@@ -315,6 +315,48 @@ model Application {
   @@index([createdAt])
 }
 
+// ---------- Contact inquiries (feedback / help requests from public forms) ----------
+enum ContactInquirySource {
+  CONTACT_PAGE     // /contact form
+  RECRUITER_FORM   // sidebar "Not sure how to post your vacancy?" form
+  RECRUITER_BANNER // "Contact manager" modal banner
+  OTHER
+}
+
+enum ContactInquiryStatus {
+  NEW
+  READ
+  RESPONDED
+  CLOSED
+}
+
+model ContactInquiry {
+  id            String               @id @default(cuid())
+  name          String
+  email         String?
+  contactMethod String?              // "telegram" | "whatsapp" | "email" | ...
+  contactValue  String?              // @username / +123... / mail@...
+  subject       String?
+  message       String               @db.Text
+
+  source        ContactInquirySource @default(OTHER)
+  pageUrl       String?
+  ipAddress     String?
+  userAgent     String?
+
+  status        ContactInquiryStatus @default(NEW)
+  adminNote     String?              @db.Text
+  handledByUserId String?
+  handledAt     DateTime?
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+}
+
 // ---------- Site-wide toggles (singleton row id = "default") ----------
 model SiteSettings {
   id String @id @default("default")

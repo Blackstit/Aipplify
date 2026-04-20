@@ -1,10 +1,8 @@
 import { Metadata } from "next"
 import { Footer } from "@/components/Footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Mail, MessageSquare, MapPin, Phone } from "lucide-react"
+import { Mail, MapPin, Phone } from "lucide-react"
+import { ContactPageForm } from "./ContactPageForm"
 
 export const metadata: Metadata = {
   title: "Contact Us - Aipplify",
@@ -18,7 +16,7 @@ export default function ContactPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
           <p className="text-xl text-gray-600">
-            Have questions? We'd love to hear from you
+            Have questions? We&apos;d love to hear from you
           </p>
         </div>
 
@@ -61,29 +59,7 @@ export default function ContactPage() {
               <CardTitle>Send us a Message</CardTitle>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" placeholder="Your name" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="your@email.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input id="subject" placeholder="What's this about?" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
-                  <textarea
-                    id="message"
-                    className="flex min-h-[120px] w-full rounded-md border border-border bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Your message..."
-                  />
-                </div>
-                <Button className="w-full">Send Message</Button>
-              </form>
+              <ContactPageForm />
             </CardContent>
           </Card>
         </div>

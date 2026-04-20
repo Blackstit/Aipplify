@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronRight,
   Menu,
+  Inbox,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -20,6 +21,7 @@ const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/jobs", label: "Jobs", icon: Briefcase },
+  { href: "/admin/contact", label: "Contact", icon: Inbox, badge: "newContact" as const },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ]
 
@@ -29,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [ready, setReady] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [adminName, setAdminName] = useState("")
+  const [newContactCount, setNewContactCount] = useState(0)
 
   useEffect(() => {
     const user = getCurrentUser()
@@ -39,6 +42,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setAdminName(user.name || user.email)
     setReady(true)
   }, [router])
+
+  useEffect(() => {
+    if (!ready) return
+    let cancelled = false
+    const load = async () => {
+      const user = getCurrentUser()
+      if (!user) return
+      try {
+        const r = await fetch("/api/admin/contact-inquiries?limit=1&status=NEW", {
+          headers: { "x-user-id": user.id },
+        })
+        if (!r.ok || cancelled) return
+        const j = await r.json()
+        setNewContactCount(typeof j.newCount === "number" ? j.newCount : 0)
+      } catch {
+        /* ignore */
+      }
+    }
+    load()
+    const id = setInterval(load, 60_000)
+    const onFocus = () => load()
+    window.addEventListener("focus", onFocus)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+      window.removeEventListener("focus", onFocus)
+    }
+  }, [ready, pathname])
 
   if (!ready) {
     return (
@@ -64,23 +95,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       <nav className="flex-1 px-2 py-4 space-y-0.5">
-        {NAV.map(({ href, label, icon: Icon, exact }) => (
-          <Link
-            key={href}
-            href={href}
-            onClick={() => setSidebarOpen(false)}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-              isActive(href, exact)
-                ? "bg-primary/10 text-primary"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-            )}
-          >
-            <Icon className="h-4 w-4 shrink-0" />
-            {label}
-            {isActive(href, exact) && <ChevronRight className="h-3.5 w-3.5 ml-auto" />}
-          </Link>
-        ))}
+        {NAV.map(({ href, label, icon: Icon, exact, badge }) => {
+          const active = isActive(href, exact)
+          const showBadge = badge === "newContact" && newContactCount > 0
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                active
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="flex-1">{label}</span>
+              {showBadge && (
+                <span className="inline-flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold tabular-nums">
+                  {newContactCount > 99 ? "99+" : newContactCount}
+                </span>
+              )}
+              {active && <ChevronRight className="h-3.5 w-3.5" />}
+            </Link>
+          )
+        })}
       </nav>
 
       <div className="px-2 pb-4 border-t border-gray-200 pt-3">

@@ -1,4 +1,5 @@
-import blogData from "@/data/blog.json"
+import fs from "fs"
+import path from "path"
 
 export interface BlogPost {
   id: string
@@ -6,11 +7,7 @@ export interface BlogPost {
   title: string
   excerpt: string
   content: string
-  author: {
-    name: string
-    avatar: string
-    role: string
-  }
+  author: { name: string; avatar: string; role: string }
   category: string
   tags: string[]
   publishedAt: string
@@ -20,9 +17,22 @@ export interface BlogPost {
   metaTitle: string
   metaDescription: string
   faq?: { q: string; a: string }[]
+  status?: string
 }
 
-const posts = blogData as BlogPost[]
+function readFromDisk(): BlogPost[] {
+  try {
+    const raw = fs.readFileSync(path.join(process.cwd(), "data/blog.json"), "utf8")
+    return JSON.parse(raw) as BlogPost[]
+  } catch {
+    return []
+  }
+}
+
+/** Returns only PUBLISHED posts (missing status = published for back-compat). */
+function publishedPosts(): BlogPost[] {
+  return readFromDisk().filter((p) => !p.status || p.status === "PUBLISHED")
+}
 
 export const BLOG_CATEGORIES = [
   "All",
@@ -37,19 +47,18 @@ export const BLOG_CATEGORIES = [
 export type BlogCategory = (typeof BLOG_CATEGORIES)[number]
 
 export function getAllBlogPosts(): BlogPost[] {
-  return [...posts].sort(
-    (a, b) =>
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  return publishedPosts().sort(
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
   )
 }
 
 export function getBlogPostBySlug(slug: string): BlogPost | undefined {
-  return posts.find((post) => post.slug === slug)
+  return publishedPosts().find((p) => p.slug === slug)
 }
 
 export function getBlogPostsByCategory(category: string): BlogPost[] {
   if (category === "All") return getAllBlogPosts()
-  return getAllBlogPosts().filter((post) => post.category === category)
+  return getAllBlogPosts().filter((p) => p.category === category)
 }
 
 export function searchBlogPosts(query: string): BlogPost[] {
@@ -65,16 +74,11 @@ export function searchBlogPosts(query: string): BlogPost[] {
 
 export const BLOG_PER_PAGE = 9
 
-export function getPaginatedBlogPosts(page: number): {
-  posts: BlogPost[]
-  total: number
-  totalPages: number
-  page: number
-} {
+export function getPaginatedBlogPosts(page: number) {
   const all = getAllBlogPosts()
   const total = all.length
   const totalPages = Math.ceil(total / BLOG_PER_PAGE)
-  const safePage = Math.max(1, Math.min(page, totalPages))
+  const safePage = Math.max(1, Math.min(page, totalPages || 1))
   return {
     posts: all.slice((safePage - 1) * BLOG_PER_PAGE, safePage * BLOG_PER_PAGE),
     total,
@@ -83,22 +87,18 @@ export function getPaginatedBlogPosts(page: number): {
   }
 }
 
-export function getRelatedPosts(
-  currentSlug: string,
-  limit = 3,
-): BlogPost[] {
+export function getRelatedPosts(currentSlug: string, limit = 3): BlogPost[] {
   const current = getBlogPostBySlug(currentSlug)
   if (!current) return getAllBlogPosts().slice(0, limit)
-
-  const scored = getAllBlogPosts()
+  return getAllBlogPosts()
     .filter((p) => p.slug !== currentSlug)
-    .map((p) => {
-      let score = 0
-      if (p.category === current.category) score += 3
-      score += p.tags.filter((t) => current.tags.includes(t)).length
-      return { post: p, score }
-    })
+    .map((p) => ({
+      post: p,
+      score:
+        (p.category === current.category ? 3 : 0) +
+        p.tags.filter((t) => current.tags.includes(t)).length,
+    }))
     .sort((a, b) => b.score - a.score)
-
-  return scored.slice(0, limit).map((s) => s.post)
+    .slice(0, limit)
+    .map((s) => s.post)
 }

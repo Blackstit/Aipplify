@@ -150,6 +150,39 @@ export async function GET(request: Request) {
     views: r._sum.views ?? 0,
   }))
 
+  // ── Match checks ──────────────────────────────────────────────────────────
+  const [matchTotal, matchToday, matchWeek, matchMonth] = await Promise.all([
+    prisma.matchCheckLog.count(),
+    prisma.matchCheckLog.count({ where: { createdAt: { gte: todayStart } } }),
+    prisma.matchCheckLog.count({ where: { createdAt: { gte: weekAgo } } }),
+    prisma.matchCheckLog.count({ where: { createdAt: { gte: monthStart } } }),
+  ])
+
+  const matchChecksLast30 = await prisma.matchCheckLog.findMany({
+    where: { createdAt: { gte: thirtyAgo } },
+    select: { createdAt: true },
+  })
+  const matchDailyMap = buildDailyMap(30, now)
+  for (const m of matchChecksLast30) {
+    const key = m.createdAt.toISOString().slice(0, 10)
+    if (key in matchDailyMap) matchDailyMap[key]++
+  }
+  const dailyMatchChecks = Object.entries(matchDailyMap).map(([date, count]) => ({ date, count }))
+
+  // ── Payments & subscriptions ───────────────────────────────────────────────
+  const [paymentsTotal, paidCount, activeSubscriptions, revenueAgg, recentPaidPayments] = await Promise.all([
+    prisma.payment.count(),
+    prisma.payment.count({ where: { status: "PAID" } }),
+    prisma.subscription.count({ where: { status: "ACTIVE", plan: { not: "FREE" } } }),
+    prisma.payment.aggregate({ _sum: { amount: true }, where: { status: "PAID" } }),
+    prisma.payment.findMany({
+      where: { status: "PAID" },
+      orderBy: { paidAt: "desc" },
+      take: 5,
+      include: { user: { select: { id: true, name: true, email: true } } },
+    }),
+  ])
+
   // ── Applications funnel (conversions) ─────────────────────────────────────
   const [applicationsToday, applicationsWeek, applicationsMonth, jobViewSum] = await Promise.all([
     prisma.application.count({ where: { createdAt: { gte: todayStart } } }),
@@ -206,6 +239,20 @@ export async function GET(request: Request) {
       weekNew: applicationsWeek,
       monthNew: applicationsMonth,
       dailyApplications,
+    },
+    matchChecks: {
+      total: matchTotal,
+      todayNew: matchToday,
+      weekNew: matchWeek,
+      monthNew: matchMonth,
+      dailyMatchChecks,
+    },
+    payments: {
+      total: paymentsTotal,
+      paidCount,
+      activeSubscriptions,
+      totalRevenue: revenueAgg._sum.amount ?? 0,
+      recentPaid: recentPaidPayments,
     },
     visitors: {
       totalEver: totalVisitors,

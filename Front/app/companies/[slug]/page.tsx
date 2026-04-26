@@ -7,6 +7,7 @@ import {
   getAllCompanies,
   getSimilarCompanies,
 } from "@/lib/companies"
+import { buildCompanyTitle, buildCompanyDescription } from "@/lib/seo"
 import { CompanyLogo } from "@/components/CompanyLogo"
 import { Footer } from "@/components/Footer"
 import { CompanyFAQ } from "./CompanyFAQ"
@@ -35,13 +36,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const company = await getCompanyBySlug(params.slug)
   if (!company) return { title: "Company Not Found — Aipplify" }
 
+  const title = buildCompanyTitle(company.name)
+  const description = buildCompanyDescription(company.name)
+
   return {
-    title: `${company.name} Careers & Jobs | AI-Scored Open Positions | Aipplify`,
-    description: `Find ${company.name} jobs in crypto, blockchain, and engineering. Apply to ${company.jobCount} verified positions with AI quality scores. Remote & onsite.`,
+    title,
+    description,
     alternates: { canonical: `/companies/${params.slug}` },
     openGraph: {
-      title: `${company.name} Careers & Jobs | Aipplify`,
-      description: `Apply to ${company.jobCount} verified positions at ${company.name}.`,
+      title,
+      description,
       url: `https://aipplify.com/companies/${params.slug}`,
     },
   }

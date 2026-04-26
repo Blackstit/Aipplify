@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import {
   User,
   Bookmark,
-  EyeOff,
   Filter,
   LogOut,
   Plus,
@@ -15,14 +14,29 @@ import {
   Building2,
   FileText,
   Settings,
+  Sparkles,
+  Crown,
 } from "lucide-react"
 import { getCurrentUser, clearCurrentUser, type User as UserType } from "@/lib/session"
+
+function useProfileCount(userId: string | undefined) {
+  const [count, setCount] = useState<number>(0)
+  useEffect(() => {
+    if (!userId) return
+    fetch(`/api/profiles?userId=${userId}`)
+      .then((r) => r.json())
+      .then((d) => setCount(d.profiles?.length ?? 0))
+      .catch(() => {})
+  }, [userId])
+  return count
+}
 
 export function UserMenu() {
   const router = useRouter()
   const [user, setUser] = useState<UserType | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const profileCount = useProfileCount(user?.id)
 
   useEffect(() => {
     setMounted(true)
@@ -78,10 +92,10 @@ export function UserMenu() {
                   </p>
                 </div>
               </div>
-              <Link href="/for-recruiters#pricing" onClick={() => setIsOpen(false)}>
-                <Button className="w-full bg-gradient-primary hover:bg-gradient-primary-hover text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Enable Plus
+              <Link href="/pricing" onClick={() => setIsOpen(false)}>
+                <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
+                  <Crown className="h-4 w-4 mr-2" />
+                  Upgrade to Pro
                   <span className="ml-auto">→</span>
                 </Button>
               </Link>
@@ -151,20 +165,38 @@ export function UserMenu() {
                 <div className="border-t border-gray-200 py-2">
                   <div className="px-4 py-2">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-700">Profiles</span>
+                      <Link
+                        href="/profiles"
+                        onClick={() => setIsOpen(false)}
+                        className="text-sm text-gray-700 hover:text-gray-900"
+                      >
+                        Profiles
+                      </Link>
                       <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
-                        0
+                        {profileCount}
                       </span>
                     </div>
-                    <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
+                    <Link
+                      href="/profiles/create"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                    >
                       <Plus className="h-3 w-3" />
                       Create profile
-                    </button>
+                    </Link>
                   </div>
                 </div>
 
                 {/* Navigation */}
                 <div className="border-t border-gray-200 py-2">
+                  <Link
+                    href="/matches"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors"
+                  >
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    <span className="text-sm text-gray-700">Match Checks</span>
+                  </Link>
                   <Link
                     href="/saved-jobs"
                     onClick={() => setIsOpen(false)}
@@ -172,14 +204,6 @@ export function UserMenu() {
                   >
                     <Bookmark className="h-4 w-4 text-gray-600" />
                     <span className="text-sm text-gray-700">Saved Jobs</span>
-                  </Link>
-                  <Link
-                    href="/hidden"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors"
-                  >
-                    <EyeOff className="h-4 w-4 text-gray-600" />
-                    <span className="text-sm text-gray-700">Hidden Jobs</span>
                   </Link>
                   <Link
                     href="/filters"

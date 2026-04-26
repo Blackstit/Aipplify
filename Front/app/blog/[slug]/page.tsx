@@ -3,36 +3,39 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import {
   getBlogPostBySlug,
-  getAllBlogPosts,
   getRelatedPosts,
 } from "@/lib/mockBlog"
+import { buildBlogTitle, buildBlogDescription } from "@/lib/seo"
 import { Footer } from "@/components/Footer"
+import { ViewTracker } from "./ViewTracker"
 import { BlogCard } from "@/components/BlogCard"
-import { ArrowLeft, ArrowRight, Clock, ChevronRight } from "lucide-react"
+import { ArrowRight, Clock, ChevronRight, ChevronDown } from "lucide-react"
 import { ArticleContent } from "./ArticleContent"
+import { BlogCover } from "@/components/blog/BlogCover"
 
 type Props = {
   params: { slug: string }
 }
 
-export async function generateStaticParams() {
-  return getAllBlogPosts().map((post) => ({ slug: post.slug }))
-}
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = getBlogPostBySlug(params.slug)
   if (!post) return { title: "Post Not Found — Aipplify Blog" }
 
+  const title = buildBlogTitle(post.metaTitle || post.title)
+  const description = buildBlogDescription(post.metaDescription || post.excerpt)
+
   return {
-    title: post.metaTitle || `${post.title} | Aipplify Blog`,
-    description: post.metaDescription || post.excerpt,
+    title,
+    description,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
-      title: post.metaTitle || post.title,
-      description: post.metaDescription || post.excerpt,
+      title,
+      description,
       url: `https://aipplify.com/blog/${post.slug}`,
       type: "article",
-      images: [{ url: post.image, alt: post.imageAlt || post.title }],
+      images: [{ url: `https://aipplify.com/api/og/blog/${post.slug}`, alt: post.imageAlt || post.title, width: 1200, height: 628 }],
     },
   }
 }
@@ -56,7 +59,7 @@ export default function BlogPostPage({ params }: Props) {
     "@type": "BlogPosting",
     headline: post.title,
     description: post.excerpt,
-    image: post.image,
+    image: `https://aipplify.com/api/og/blog/${post.slug}`,
     datePublished: post.publishedAt,
     dateModified: post.publishedAt,
     author: {
@@ -92,6 +95,7 @@ export default function BlogPostPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
+      <ViewTracker slug={params.slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }}
@@ -168,13 +172,7 @@ export default function BlogPostPage({ params }: Props) {
 
           {/* Featured image */}
           <div className="aspect-video rounded-2xl overflow-hidden mb-10">
-            <img
-              src={post.image}
-              alt={post.imageAlt || post.title}
-              width={800}
-              height={400}
-              className="w-full h-full object-cover"
-            />
+            <BlogCover title={post.title} category={post.category} slug={post.slug} size="hero" />
           </div>
 
           {/* Content */}
@@ -193,6 +191,31 @@ export default function BlogPostPage({ params }: Props) {
               </span>
             ))}
           </div>
+
+          {/* FAQ */}
+          {post.faq && post.faq.length > 0 && (
+            <section className="mb-12" aria-label="Frequently Asked Questions">
+              <h2 className="text-2xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                Frequently Asked Questions
+              </h2>
+              <div className="space-y-3">
+                {post.faq.map((item, i) => (
+                  <details
+                    key={i}
+                    className="group bg-white rounded-xl border border-gray-200 overflow-hidden"
+                  >
+                    <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none hover:bg-gray-50 transition-colors">
+                      <span className="text-sm font-semibold text-gray-900 pr-4">{item.q}</span>
+                      <ChevronDown className="h-4 w-4 text-gray-400 shrink-0 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="px-5 pb-4 pt-0 text-sm text-gray-600 leading-relaxed border-t border-gray-100">
+                      {item.a}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* CTA */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-8 md:p-10 text-center text-white mb-16">

@@ -33,17 +33,21 @@ export function HeaderUserArea() {
       <div className="flex items-center gap-4">
         {user.type === "CANDIDATE" && (
           <>
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-              <Sparkles className="h-5 w-5" />
-            </Button>
+            <Link href="/matches">
+              <Button variant="ghost" size="icon" className="hidden md:flex" title="My Match Checks">
+                <Sparkles className="h-5 w-5" />
+              </Button>
+            </Link>
             <SavedJobsBadge />
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <FileText className="h-5 w-5" />
             </Button>
-            <Button className="hidden md:flex">
-              <Crown className="h-4 w-4 mr-2" />
-              Upgrade
-            </Button>
+            <Link href="/pricing">
+              <Button className="hidden md:flex bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
+                <Crown className="h-4 w-4 mr-2" />
+                Upgrade
+              </Button>
+            </Link>
           </>
         )}
         {user.type === "RECRUITER" && (
@@ -61,17 +65,21 @@ export function HeaderUserArea() {
 
   return (
     <div className="flex items-center gap-4">
-      <Button variant="ghost" size="icon" className="hidden md:flex">
-        <Sparkles className="h-5 w-5" />
-      </Button>
+      <Link href="/auth">
+        <Button variant="ghost" size="icon" className="hidden md:flex" title="Match Checks — sign in">
+          <Sparkles className="h-5 w-5" />
+        </Button>
+      </Link>
       <SavedJobsBadge />
       <Button variant="ghost" size="icon" className="hidden md:flex">
         <FileText className="h-5 w-5" />
       </Button>
-      <Button className="hidden md:flex">
-        <Crown className="h-4 w-4 mr-2" />
-        Upgrade
-      </Button>
+      <Link href="/pricing">
+        <Button className="hidden md:flex bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
+          <Crown className="h-4 w-4 mr-2" />
+          Upgrade
+        </Button>
+      </Link>
       <Link href="/auth" aria-label="Sign in">
         <Button variant="ghost" size="icon">
           <UserIcon className="h-5 w-5" />

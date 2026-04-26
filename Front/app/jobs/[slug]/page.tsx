@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import { resolveVacancyBySlug } from "@/lib/resolve-job"
+import { pickJobEmoji, buildJobTitle, buildJobDescription } from "@/lib/seo"
 import { Footer } from "@/components/Footer"
 import { CompanyLogo } from "@/components/CompanyLogo"
 import { Tag } from "@/components/Tag"
@@ -9,6 +10,7 @@ import { SimilarJobs } from "@/components/SimilarJobs"
 import { JobDescription } from "@/components/JobDescription"
 import { JobInteractions } from "./JobInteractions"
 import { JobDetailLiveMetrics } from "@/components/JobDetailLiveMetrics"
+import { MatchBlock } from "@/components/jobs/MatchBlock"
 import { getSiteSettings } from "@/lib/site-settings"
 import {
   MapPin, Clock, Briefcase, DollarSign,
@@ -36,17 +38,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Job Not Found — Aipplify" }
   }
   const job = result.job
-  const desc = job.description
-    ? job.description.replace(/[#*\n]+/g, " ").slice(0, 155).trim() + "..."
-    : `Apply to ${job.title} at ${job.company.name}. AI-scored position on Aipplify.`
+  const emoji = pickJobEmoji(job)
+  const title = buildJobTitle(job.title, job.company.name, emoji)
+  const description = buildJobDescription({
+    emoji,
+    companyName: job.company.name,
+    title: job.title,
+    workType: job.workType,
+    location: job.location,
+    salaryMin: job.salaryMin,
+    salaryMax: job.salaryMax,
+    salary: job.salary,
+    tags: job.tags,
+  })
 
   return {
-    title: `${job.title} at ${job.company.name} | Aipplify`,
-    description: desc,
+    title,
+    description,
     alternates: { canonical: `/jobs/${params.slug}` },
     openGraph: {
-      title: `${job.title} at ${job.company.name}`,
-      description: desc,
+      title,
+      description,
       url: `https://aipplify.com/jobs/${params.slug}`,
       type: "website",
     },
@@ -229,6 +241,22 @@ export default async function JobDetailPage({ params }: Props) {
                 </div>
               </div>
             )}
+
+            {/* Match & Cover Letter */}
+            <MatchBlock
+              job={{
+                id: job.id,
+                slug: job.slug,
+                title: job.title,
+                companyName: job.company.name ?? "",
+                description: job.description,
+                requirements: Array.isArray(job.requirements) ? job.requirements.join("\n") : (job.requirements ?? ""),
+                skills: job.tags ?? [],
+                experience: job.experience ?? "",
+                workType: job.workType ?? "",
+                location: job.location ?? "",
+              }}
+            />
 
             {/* Description */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">

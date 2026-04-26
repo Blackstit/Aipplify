@@ -7,6 +7,7 @@ import {
   Users, TrendingUp, Briefcase, FileText,
   Activity, Calendar, Eye, Globe,
   Zap, ArrowRight, UserPlus, Send,
+  Sparkles, CreditCard, DollarSign,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -45,6 +46,17 @@ interface Stats {
     todayViews: number; weekViews: number; monthViews: number
     dailyNewVisitors: Array<{ day: string; count: number }>
     topPages: Array<{ path: string; views: number }>
+  }
+  matchChecks: {
+    total: number; todayNew: number; weekNew: number; monthNew: number
+    dailyMatchChecks: Array<{ date: string; count: number }>
+  }
+  payments: {
+    total: number; paidCount: number; activeSubscriptions: number; totalRevenue: number
+    recentPaid: Array<{
+      id: string; amount: number; currency: string; plan: string; period: string; paidAt: string | null
+      user: { id: string; name: string | null; email: string } | null
+    }>
   }
 }
 
@@ -252,6 +264,8 @@ export default function AdminDashboard() {
   }
 
   const { users, jobs, visitors, applications } = stats
+  const matchChecks = (stats as typeof stats & { matchChecks?: Stats["matchChecks"] }).matchChecks
+  const payments = (stats as typeof stats & { payments?: Stats["payments"] }).payments
 
   return (
     <div className="space-y-8">
@@ -303,6 +317,78 @@ export default function AdminDashboard() {
         </div>
 
       </section>
+
+      {/* ── Revenue & subscriptions ───────────────────────────────────────── */}
+      {payments && <section>
+        <SectionHeader
+          icon={CreditCard}
+          title="Revenue & subscriptions"
+          sub={`$${payments.totalRevenue.toFixed(2)} USDT earned · ${payments.activeSubscriptions} active Pro subs`}
+          href="/admin/payments"
+        />
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <StatCard label="Total revenue" value={`$${payments.totalRevenue.toFixed(2)}`} icon={DollarSign} colorClass="bg-emerald-100 text-emerald-600" href="/admin/payments" />
+          <StatCard label="Paid orders" value={payments.paidCount} icon={CreditCard} colorClass="bg-green-100 text-green-600" href="/admin/payments" />
+          <StatCard label="Active Pro subs" value={payments.activeSubscriptions} icon={Zap} colorClass="bg-indigo-100 text-indigo-600" />
+          <StatCard label="Total invoices" value={payments.total} icon={FileText} colorClass="bg-purple-100 text-purple-600" href="/admin/payments" />
+        </div>
+
+        {payments.recentPaid.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+              <p className="font-semibold text-sm">Recent payments</p>
+              <Link href="/admin/payments" className="text-xs text-primary hover:underline flex items-center gap-1">
+                View all <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {payments.recentPaid.map((p) => (
+                <div key={p.id} className="flex items-center gap-3 px-5 py-2.5">
+                  <div className="h-8 w-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                    <DollarSign className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{p.user?.name || "—"}</p>
+                    <p className="text-xs text-gray-500 truncate">{p.user?.email}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-emerald-600">${p.amount} {p.currency}</p>
+                    <p className="text-xs text-gray-400">{p.plan} · {p.period}</p>
+                  </div>
+                  {p.paidAt && (
+                    <span className="text-xs text-gray-400 hidden md:block shrink-0">
+                      {formatDistanceToNow(new Date(p.paidAt), { addSuffix: true })}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>}
+
+      {/* ── Match checks ──────────────────────────────────────────────────────── */}
+      {matchChecks && <section>
+        <SectionHeader
+          icon={Sparkles}
+          title="AI Match Checks"
+          sub={`${matchChecks.total.toLocaleString()} total checks run`}
+        />
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <StatCard label="Total checks" value={matchChecks.total} icon={Sparkles} colorClass="bg-violet-100 text-violet-600" />
+          <StatCard label="Today" value={matchChecks.todayNew} icon={Zap} colorClass="bg-indigo-100 text-indigo-600" />
+          <StatCard label="This week" value={matchChecks.weekNew} icon={TrendingUp} colorClass="bg-purple-100 text-purple-600" />
+          <StatCard label="This month" value={matchChecks.monthNew} icon={Calendar} colorClass="bg-pink-100 text-pink-600" />
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <p className="text-sm font-semibold mb-1 text-gray-700">Match checks — last 30 days</p>
+          <p className="text-xs text-gray-400 mb-4">AI match requests per day</p>
+          <MiniBarChart data={matchChecks.dailyMatchChecks} valueKey="count" labelKey="date" color="bg-violet-500/70" targetTicks={6} />
+        </div>
+      </section>}
 
       {/* ── Applications & job views (conversions) ─────────────────────────── */}
       <section>

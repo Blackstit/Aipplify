@@ -85,6 +85,16 @@ enum ApplicationStatus {
   WITHDRAWN
 }
 
+enum PaymentStatus {
+  PENDING
+  PAYING
+  PAID
+  EXPIRED
+  UNDERPAID
+  REFUNDED
+  CANCELLED
+}
+
 // ---------- Core auth/account ----------
 
 model User {
@@ -112,6 +122,8 @@ model User {
   applications   Application[]
 
   blogPosts      BlogPost[] @relation("BlogAuthor")
+  profiles       CandidateProfile[]
+  payments       Payment[]
 
   @@index([type])
   @@index([role])
@@ -164,6 +176,10 @@ model Subscription {
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean            @default(false)
+
+  grantedByAdmin       Boolean            @default(false)
+  adminNote            String?
+  lastPaymentId        String?
 
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
@@ -465,6 +481,116 @@ model VerificationCode {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+// ---------- Match check log & saved results ----------
+
+model MatchCheckLog {
+  id        String   @id @default(cuid())
+  userId    String
+  jobId     String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model SavedMatch {
+  id          String   @id @default(cuid())
+  userId      String
+  jobId       String
+  jobSlug     String
+  jobTitle    String
+  companyName String?
+
+  score       Int
+  verdict     String
+  summary     String?  @db.Text
+  criteria    Json     @default("[]")
+  strengths   Json     @default("[]")
+  gaps        Json     @default("[]")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, jobId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ---------- Candidate Profiles / Resumes ----------
+
+model CandidateProfile {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title          String
+  firstName      String?
+  lastName       String?
+  email          String?
+  phone          String?
+  location       String?
+  summary        String?  @db.Text
+
+  website        String?
+  linkedin       String?
+  github         String?
+  twitter        String?
+
+  skills         String[] @default([])
+  experience     Json     @default("[]")
+  education      Json     @default("[]")
+  projects       Json     @default("[]")
+  portfolio      Json     @default("[]")
+  certifications Json     @default("[]")
+  languages      Json     @default("[]")
+
+  pdfFilename    String?
+  rawText        String?  @db.Text
+  embedding      Float[]  @default([])
+
+  isPublic       Boolean  @default(false)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ---------- Payments ----------
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan            SubscriptionPlan @default(STARTER)
+  period          String        // "monthly" | "quarterly" | "yearly"
+  durationDays    Int
+  amount          Float
+  currency        String        @default("USDT")
+
+  orderId         String        @unique
+  oxapayTrackId   String?       @unique
+  oxapayPayUrl    String?
+
+  status          PaymentStatus @default(PENDING)
+
+  paidAt          DateTime?
+  txHash          String?
+  txNetwork       String?
+  txCurrency      String?
+
+  grantedByAdmin  Boolean       @default(false)
+  adminNote       String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ---------- Blog ----------

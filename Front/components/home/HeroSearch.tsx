@@ -10,6 +10,20 @@ import { Search, Sparkles, Loader2, Briefcase, Users } from "lucide-react"
 import type { JobFrontend } from "@/lib/jobs"
 import type { LandingJob } from "@/lib/landing-data"
 
+const REGULAR_EXAMPLES = [
+  "Job title, skill, or company...",
+  "Senior ML Engineer",
+  "Remote React Developer",
+  "Product Manager at a fintech",
+  "Solidity Developer, $150K+",
+]
+const AI_EXAMPLES = [
+  "Describe your ideal job in natural language...",
+  "Senior ML engineer at a well-funded AI startup",
+  "Remote Solidity developer, 3+ yrs, green team",
+  "Data scientist, full-time, $150K+, EU time zone",
+]
+
 export function HeroSearch() {
   const router = useRouter()
   const [query, setQuery] = useState("")
@@ -18,7 +32,21 @@ export function HeroSearch() {
   const [aiMode, setAiMode] = useState(false)
   const [aiResults, setAiResults] = useState<LandingJob[]>([])
   const [aiLoading, setAiLoading] = useState(false)
+  const [rotIdx, setRotIdx] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (query) return
+    const list = aiMode ? AI_EXAMPLES : REGULAR_EXAMPLES
+    const interval = setInterval(() => {
+      setRotIdx((i) => (i + 1) % list.length)
+    }, 3500)
+    return () => clearInterval(interval)
+  }, [query, aiMode])
+
+  const placeholder = aiMode
+    ? AI_EXAMPLES[rotIdx % AI_EXAMPLES.length]
+    : REGULAR_EXAMPLES[rotIdx % REGULAR_EXAMPLES.length]
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -93,7 +121,7 @@ export function HeroSearch() {
           <Input
             type="text"
             name="search"
-            placeholder={aiMode ? "Describe your ideal job in natural language..." : "Job title, skill, or company..."}
+            placeholder={placeholder}
             value={query}
             onChange={(e) => { setQuery(e.target.value); setShowSuggestions(true) }}
             onFocus={() => setShowSuggestions(true)}

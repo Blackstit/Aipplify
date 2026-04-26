@@ -3,20 +3,13 @@ import { notFound, redirect } from "next/navigation"
 import {
   getPaginatedBlogPosts,
   getAllBlogPosts,
-  BLOG_PER_PAGE,
 } from "@/lib/mockBlog"
+
+export const dynamic = "force-dynamic"
 import { BlogPageLayout } from "../../BlogPageLayout"
 
 type Props = {
   params: { num: string }
-}
-
-export async function generateStaticParams() {
-  const all = getAllBlogPosts()
-  const totalPages = Math.ceil(all.length / BLOG_PER_PAGE)
-  return Array.from({ length: totalPages }, (_, i) => ({
-    num: String(i + 1),
-  }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

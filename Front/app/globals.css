@@ -36,11 +36,197 @@
   animation: featured-glow 2s ease-in-out infinite;
 }
 
+/* --- Hero entrance + premium accents --- */
+@keyframes hero-rise {
+  0%   { opacity: 0; transform: translateY(18px); filter: blur(6px); }
+  100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+.hero-rise {
+  animation: hero-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes gradient-shimmer {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+.gradient-shimmer {
+  background-size: 200% auto;
+  animation: gradient-shimmer 6s ease-in-out infinite;
+}
+
+@keyframes soft-pulse-glow {
+  0%, 100% { box-shadow: 0 12px 38px -12px rgba(124, 58, 237, 0.18); }
+  50%      { box-shadow: 0 22px 60px -10px rgba(124, 58, 237, 0.36); }
+}
+.search-glow {
+  animation: soft-pulse-glow 5s ease-in-out infinite;
+}
+
+/* --- Premium bento cards --- */
+.beam-border {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.beam-border::before {
+  content: "";
+  position: absolute;
+  inset: -150%;
+  background: conic-gradient(
+    from 0turn,
+    transparent 0 62%,
+    rgba(167, 139, 250, 0.85) 78%,
+    rgba(236, 72, 153, 0.85) 90%,
+    transparent 100%
+  );
+  animation: beam-rotate 7s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+@keyframes beam-rotate {
+  to { transform: rotate(1turn); }
+}
+
+/* Animated AI score bar */
+@keyframes score-bar-fill {
+  0%   { width: 0%; }
+  30%  { width: var(--w, 50%); }
+  85%  { width: var(--w, 50%); }
+  100% { width: 0%; }
+}
+.score-bar {
+  animation: score-bar-fill 6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  width: 0;
+}
+
+/* Downward scan line */
+@keyframes scan-line {
+  0%   { opacity: 0; transform: translateY(-40px); }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(260px); }
+}
+.scan-line {
+  animation: scan-line 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Typing caret */
+@keyframes caret-blink {
+  0%, 49%   { border-color: rgba(167, 139, 250, 0.95); }
+  50%, 100% { border-color: transparent; }
+}
+.typing-caret {
+  border-right: 2px solid rgba(167, 139, 250, 0.95);
+  padding-right: 6px;
+  animation: caret-blink 1.1s steps(2) infinite;
+}
+
+/* Hero accent underline swoosh */
+@keyframes swoosh-draw {
+  from { stroke-dasharray: 0 100; }
+  to   { stroke-dasharray: 100 0; }
+}
+.swoosh-draw {
+  stroke-dasharray: 0 100;
+  animation: swoosh-draw 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.9s forwards;
+}
+
+/* Flowing gradient line (e.g., between step markers) */
+@keyframes path-flow {
+  0%   { background-position:   0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.path-flow {
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.5),
+    rgba(168, 85, 247, 0.8),
+    rgba(236, 72, 153, 0.8),
+    rgba(168, 85, 247, 0.8),
+    rgba(99, 102, 241, 0.5)
+  );
+  background-size: 200% 100%;
+  animation: path-flow 6s linear infinite;
+}
+
+/* Fade edges for horizontal marquees */
+.fade-edges {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+          mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+}
+
+/* Subtle dotted pattern overlay for hero */
+.hero-dots {
+  background-image: radial-gradient(circle, rgba(99, 102, 241, 0.14) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at center, #000 10%, transparent 75%);
+          mask-image: radial-gradient(ellipse 70% 60% at center, #000 10%, transparent 75%);
+}
+
+/* Sweep shine that runs across a button on hover */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
+}
+.btn-shine:hover::after,
+.btn-shine:focus-visible::after {
+  transform: translateX(120%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-fade-in-up {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+  .hero-rise,
+  .gradient-shimmer,
+  .search-glow {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  .btn-shine::after { display: none; }
+  .beam-border::before,
+  .score-bar,
+  .scan-line,
+  .typing-caret,
+  .swoosh-draw,
+  .path-flow {
+    animation: none !important;
+  }
+  .swoosh-draw {
+    stroke-dasharray: 100 0 !important;
   }
 }

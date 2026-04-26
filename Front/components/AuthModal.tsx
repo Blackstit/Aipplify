@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,13 +14,14 @@ interface AuthModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+  defaultMode?: "login" | "register"
 }
 
-export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
+export function AuthModal({ open, onOpenChange, onSuccess, defaultMode = "login" }: AuthModalProps) {
   const [step, setStep] = useState<Step>("auth")
   const [pendingEmail, setPendingEmail] = useState("")
 
-  const [isLogin, setIsLogin] = useState(true)
+  const [isLogin, setIsLogin] = useState(defaultMode !== "register")
   const [activeTab, setActiveTab] = useState<"job-seeker" | "recruiter">("job-seeker")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -31,6 +32,15 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
   const [registerPassword, setRegisterPassword] = useState("")
   const [registerName, setRegisterName] = useState("")
   const [registerCompanyName, setRegisterCompanyName] = useState("")
+
+  useEffect(() => {
+    if (open) {
+      setIsLogin(defaultMode !== "register")
+      setStep("auth")
+      setError("")
+      setCodeDigits(["", "", "", "", "", ""])
+    }
+  }, [open, defaultMode])
 
   // Verification code — 6 separate inputs
   const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""])

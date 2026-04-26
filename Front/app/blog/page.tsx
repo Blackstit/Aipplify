@@ -1,5 +1,7 @@
 import { Metadata } from "next"
-import { getPaginatedBlogPosts, BLOG_PER_PAGE, getAllBlogPosts, BLOG_CATEGORIES } from "@/lib/mockBlog"
+import { getPaginatedBlogPosts, getAllBlogPosts, BLOG_CATEGORIES } from "@/lib/mockBlog"
+
+export const dynamic = "force-dynamic"
 import { BlogPageLayout } from "./BlogPageLayout"
 import { BlogListClient } from "./BlogListClient"
 import { Footer } from "@/components/Footer"
